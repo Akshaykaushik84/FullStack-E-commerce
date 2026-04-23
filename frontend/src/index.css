@@ -1,0 +1,36 @@
+﻿@import "tailwindcss";
+:root {
+  --brand-50: #eef4ff;
+  --brand-100: #dbe7ff;
+  --brand-200: #bfd1ff;
+  --brand-500: #3b5bdb;
+  --brand-600: #2f4ec9;
+  --brand-700: #243ea8;
+  --accent-500: #14b8a6;
+  --surface-50: #f8fbff;
+  --ink-900: #10203a;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 1s ease forwards;
+}
+
+body {
+  margin: 0;
+  background: linear-gradient(180deg, var(--brand-50) 0%, #ffffff 45%, var(--surface-50) 100%);
+  color: var(--ink-900);
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
