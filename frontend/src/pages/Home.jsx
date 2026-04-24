@@ -107,19 +107,19 @@ const Home = () => {
     <div className="min-h-screen bg-[linear-gradient(180deg,var(--surface-50)_0%,#ffffff_45%,#eef7ff_100%)]">
       <Navbar />
 
-      <div className="mx-auto max-w-7xl px-5 pb-16 pt-28">
-        <section className="relative overflow-hidden rounded-[2.5rem] border border-white/20 bg-[linear-gradient(135deg,var(--ink-900)_0%,var(--brand-700)_46%,var(--accent-500)_100%)] text-white shadow-2xl">
+      <div className="mx-auto max-w-[1440px] px-3 pb-28 pt-24 sm:px-4 sm:pt-28 lg:px-6 lg:pb-16">
+        <section className="relative overflow-hidden rounded-[2rem] border border-white/20 bg-[linear-gradient(135deg,var(--ink-900)_0%,var(--brand-700)_46%,var(--accent-500)_100%)] text-white shadow-2xl sm:rounded-[2.5rem]">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_35%)]" />
-          <div className="grid items-center gap-10 px-8 py-10 md:grid-cols-[1.05fr_0.95fr] md:px-12 md:py-14">
+          <div className="grid items-center gap-8 px-5 py-7 sm:px-7 sm:py-9 md:grid-cols-[1.05fr_0.95fr] md:px-10 md:py-12 lg:gap-10 lg:px-12 lg:py-14">
             <div className="relative z-10">
               <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs uppercase tracking-[0.3em] text-cyan-100">
                 <Sparkles size={14} />
                 {activeSlide.eyebrow}
               </div>
-              <h1 className="mt-6 max-w-2xl text-4xl font-bold leading-tight md:text-6xl">
+              <h1 className="mt-6 max-w-2xl text-3xl font-bold leading-tight sm:text-4xl md:text-5xl lg:text-6xl">
                 {activeSlide.title}
               </h1>
-              <p className="mt-5 max-w-xl text-base text-slate-200 md:text-lg">
+              <p className="mt-5 max-w-xl text-sm text-slate-200 sm:text-base md:text-lg">
                 {activeSlide.subtitle}
               </p>
               <div className="mt-8 flex flex-wrap gap-4">
@@ -142,16 +142,16 @@ const Home = () => {
                   Reset Filters
                 </button>
               </div>
-              <div className="mt-10 grid gap-4 sm:grid-cols-3">
+              <div className="mt-8 grid gap-4 sm:grid-cols-3">
                 <div className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
                   <p className="text-xs uppercase tracking-[0.25em] text-slate-200">Catalog</p>
                   <p className="mt-2 text-2xl font-bold">{pagination.totalProducts || 0}</p>
-                  <p className="mt-1 text-sm text-slate-200">Available products</p>
+                  <p className="mt-1 text-sm text-slate-200">Products</p>
                 </div>
                 <div className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
                   <p className="text-xs uppercase tracking-[0.25em] text-slate-200">Categories</p>
                   <p className="mt-2 text-2xl font-bold">{Math.max(categories.length - 1, 0)}</p>
-                  <p className="mt-1 text-sm text-slate-200">Shoppable sections</p>
+                  <p className="mt-1 text-sm text-slate-200">Sections</p>
                 </div>
                 <div className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
                   <p className="text-xs uppercase tracking-[0.25em] text-slate-200">Discovery</p>
@@ -159,7 +159,7 @@ const Home = () => {
                     <TrendingUp size={20} />
                     Smart
                   </p>
-                  <p className="mt-1 text-sm text-slate-200">Search, sort, and paginate</p>
+                  <p className="mt-1 text-sm text-slate-200">Search and sort</p>
                 </div>
               </div>
             </div>
@@ -169,7 +169,7 @@ const Home = () => {
                 <img
                   src={activeSlide.image}
                   alt={activeSlide.title}
-                  className="h-[340px] w-full rounded-[1.5rem] object-cover"
+                  className="h-[220px] w-full rounded-[1.25rem] object-cover sm:h-[280px] md:h-[320px] lg:h-[340px] sm:rounded-[1.5rem]"
                 />
               </div>
               <div className="mt-5 flex items-center gap-3">
@@ -188,7 +188,7 @@ const Home = () => {
           </div>
         </section>
 
-        <section className="mt-10 grid gap-8 lg:grid-cols-[280px_1fr]">
+        <section className="mt-8 grid gap-6 lg:mt-10 lg:grid-cols-[280px_1fr] lg:gap-8">
           <Sidebar
             categories={categories}
             selectedCategory={filters.category}
@@ -196,8 +196,8 @@ const Home = () => {
           />
 
           <div className="space-y-8">
-            <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="grid gap-4 lg:grid-cols-[1fr_220px_220px]">
+            <div className="rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+              <div className="grid gap-3 lg:grid-cols-[1fr_220px_220px] lg:gap-4">
                 <div className="relative">
                   <Search
                     size={18}
@@ -243,13 +243,11 @@ const Home = () => {
               </div>
             ) : null}
 
-            <div className="flex flex-wrap items-end justify-between gap-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="text-sm uppercase tracking-[0.3em] text-[var(--brand-500)]">Catalog</p>
-                <h2 className="mt-2 text-3xl font-bold text-slate-900">Browse Products</h2>
-                <p className="mt-2 text-sm text-slate-500">
-                  Category: {filters.category} | Sort: {filters.sort}
-                </p>
+                <h2 className="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl">Browse Products</h2>
+                <p className="mt-2 text-sm text-slate-500">Category: {filters.category}</p>
               </div>
               <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
                 <p className="text-sm text-slate-500">Page status</p>
@@ -265,7 +263,7 @@ const Home = () => {
               </div>
             ) : products.length ? (
               <>
-                <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                   {products.map((product) => (
                     <ProductCard
                       key={product._id}

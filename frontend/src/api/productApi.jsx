@@ -1,27 +1,25 @@
-﻿import axios from "axios";
+import { apiClient, getAuthHeaders } from "./apiClient.jsx";
 
-const BASE_URL = "http://localhost:5000/api/products";
+export const getProducts = (params = {}) => apiClient.get("/products", { params });
 
-export const getProducts = (params = {}) => axios.get(BASE_URL, { params });
-
-export const getSingleProduct = (id) => axios.get(`${BASE_URL}/${id}`);
+export const getSingleProduct = (id) => apiClient.get(`/products/${id}`);
 
 export const createProductReview = (id, reviewData, token) =>
-  axios.post(`${BASE_URL}/${id}/reviews`, reviewData, {
-    headers: { Authorization: `Bearer ${token}` },
+  apiClient.post(`/products/${id}/reviews`, reviewData, {
+    headers: getAuthHeaders(token),
   });
 
 export const createProduct = (productData, token) =>
-  axios.post(BASE_URL, productData, {
-    headers: { Authorization: `Bearer ${token}` },
+  apiClient.post("/products", productData, {
+    headers: getAuthHeaders(token),
   });
 
 export const updateProduct = (id, productData, token) =>
-  axios.put(`${BASE_URL}/${id}`, productData, {
-    headers: { Authorization: `Bearer ${token}` },
+  apiClient.put(`/products/${id}`, productData, {
+    headers: getAuthHeaders(token),
   });
 
 export const deleteProduct = (id, token) =>
-  axios.delete(`${BASE_URL}/${id}`, {
-    headers: { Authorization: `Bearer ${token}` },
+  apiClient.delete(`/products/${id}`, {
+    headers: getAuthHeaders(token),
   });

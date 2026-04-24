@@ -1,18 +1,16 @@
-﻿import axios from "axios";
-
-const BASE_URL = "http://localhost:5000/api/cart";
+import { apiClient, getAuthHeaders } from "./apiClient.jsx";
 
 const getConfig = (token) => ({
-  headers: { Authorization: `Bearer ${token}` },
+  headers: getAuthHeaders(token),
 });
 
-export const getCart = (token) => axios.get(BASE_URL, getConfig(token));
+export const getCart = (token) => apiClient.get("/cart", getConfig(token));
 
 export const addToCart = (productId, token, quantity = 1) =>
-  axios.post(BASE_URL, { productId, quantity }, getConfig(token));
+  apiClient.post("/cart", { productId, quantity }, getConfig(token));
 
 export const updateCartQuantity = (productId, quantity, token) =>
-  axios.put(BASE_URL, { productId, quantity }, getConfig(token));
+  apiClient.put("/cart", { productId, quantity }, getConfig(token));
 
 export const removeFromCart = (productId, token) =>
-  axios.delete(`${BASE_URL}/${productId}`, getConfig(token));
+  apiClient.delete(`/cart/${productId}`, getConfig(token));

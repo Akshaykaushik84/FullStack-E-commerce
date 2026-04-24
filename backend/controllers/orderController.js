@@ -1,7 +1,8 @@
-﻿const Order = require("../models/Order")
+const Order = require("../models/Order")
 const Cart = require("../models/Cart")
 const Coupon = require("../models/Coupon")
 const { computeCouponDiscount, normalizeCouponCode } = require("./couponController")
+const { syncOrderStatus, syncOrderStatuses } = require("../utils/orderStatus")
 
 const getAvailableStock = (product) => {
     const parsedStock = Number(product?.countInStock)
@@ -89,7 +90,8 @@ const placeOrder = async (req, res) => {
             itemsPrice,
             shippingFee,
             taxPrice,
-            totalPrice
+            totalPrice,
+            status: "Pending"
         })
 
         for (const item of cart.products) {
@@ -119,6 +121,8 @@ const getUserOrders = async (req, res) => {
             .populate("products.product")
             .populate("user", "name email")
 
+        await syncOrderStatuses(orders)
+
         res.status(200).json(orders)
     } catch (err) {
         res.status(500).json({ message: err.message })
@@ -128,7 +132,7 @@ const getUserOrders = async (req, res) => {
 const updateOrderStatus = async (req, res) => {
     try {
         const { status } = req.body
-        const allowedStatuses = ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"]
+        const allowedStatuses = ["Pending", "Approved", "Shipped", "Delivered", "Cancelled"]
 
         if (!allowedStatuses.includes(status)) {
             return res.status(400).json({ message: "Invalid order status" })
@@ -162,6 +166,8 @@ const getSingleOrder = async (req, res) => {
         if (req.user.role !== "admin" && order.user._id.toString() !== req.user.id) {
             return res.status(403).json({ message: "Access denied" })
         }
+
+        await syncOrderStatus(order)
 
         res.status(200).json(order)
     } catch (err) {

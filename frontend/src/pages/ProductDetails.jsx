@@ -78,19 +78,19 @@ const ProductDetails = () => {
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,var(--surface-50)_0%,#ffffff_100%)]">
       <Navbar />
-      <div className="mx-auto max-w-7xl px-5 pb-16 pt-28">
-        <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr]">
+      <div className="mx-auto max-w-7xl px-3 pb-28 pt-24 sm:px-5 sm:pt-28 lg:pb-16">
+        <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr] lg:gap-8">
           <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-            <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
+            <img src={product.image} alt={product.name} className="h-[280px] w-full object-cover sm:h-[420px] lg:h-full" />
           </div>
 
-          <div className="space-y-6 rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
+          <div className="space-y-5 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
             <div className="flex flex-wrap items-center gap-3">
               <span className="rounded-full bg-[var(--brand-50)] px-4 py-2 text-sm font-semibold text-[var(--brand-700)]">{product.category}</span>
               {product.featured ? <span className="rounded-full bg-[var(--ink-900)] px-4 py-2 text-sm font-semibold text-white">Featured</span> : null}
             </div>
             <div>
-              <h1 className="text-4xl font-bold text-slate-900">{product.name}</h1>
+              <h1 className="text-3xl font-bold text-slate-900 sm:text-4xl">{product.name}</h1>
               <p className="mt-2 text-slate-500">{product.brand || "MyStore Select"}</p>
             </div>
             <div className="flex items-center gap-3">
@@ -101,12 +101,12 @@ const ProductDetails = () => {
               <p className="text-sm text-slate-500">{product.numReviews || 0} reviews</p>
             </div>
             <p className="text-lg leading-8 text-slate-600">{product.description}</p>
-            <div className="flex flex-wrap items-center justify-between gap-4 rounded-[2rem] bg-slate-50 p-5">
+            <div className="flex flex-col gap-4 rounded-[2rem] bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
               <div>
                 <p className="text-3xl font-bold text-[var(--brand-700)]">{formatPrice(product.price)}</p>
                 <p className="mt-1 text-sm text-slate-500">Stock available: {product.countInStock}</p>
               </div>
-              <div className="flex gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row">
                 <button type="button" onClick={handleWishlist} className={`rounded-2xl px-4 py-3 text-sm font-semibold ${wishlisted ? "bg-rose-500 text-white" : "border border-slate-200 text-slate-700"}`}>
                   <span className="inline-flex items-center gap-2"><Heart size={16} fill={wishlisted ? "currentColor" : "none"} /> {wishlisted ? "Saved" : "Save"}</span>
                 </button>
@@ -119,8 +119,8 @@ const ProductDetails = () => {
           </div>
         </div>
 
-        <div className="mt-10 grid gap-8 lg:grid-cols-[0.95fr_1.05fr]">
-          <form onSubmit={handleReviewSubmit} className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
+        <div className="mt-8 grid gap-6 lg:mt-10 lg:grid-cols-[0.95fr_1.05fr] lg:gap-8">
+          <form onSubmit={handleReviewSubmit} className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
             <h2 className="text-2xl font-semibold text-slate-900">Write a review</h2>
             <div className="mt-5 space-y-4">
               <select value={reviewForm.rating} onChange={(e) => setReviewForm((prev) => ({ ...prev, rating: Number(e.target.value) }))} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]">
@@ -131,13 +131,13 @@ const ProductDetails = () => {
             </div>
           </form>
 
-          <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
+          <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
             <h2 className="text-2xl font-semibold text-slate-900">Customer reviews</h2>
             <div className="mt-5 space-y-4">
               {(product.reviews || []).length ? (
                 product.reviews.map((review) => (
                   <div key={review._id} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                       <div>
                         <p className="font-semibold text-slate-900">{review.name}</p>
                         <p className="text-sm text-slate-500">{review.email || review.user?.email || "No email"}</p>

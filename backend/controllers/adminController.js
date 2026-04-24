@@ -4,20 +4,34 @@ const Order = require("../models/Order")
 const Product = require("../models/Product")
 const User = require("../models/User")
 const { seedDefaultCoupons } = require("./couponController")
+const { STATUS_FLOW, syncOrderStatuses } = require("../utils/orderStatus")
+
+const getActiveProductQuery = () => ({
+    $or: [
+        { isActive: true },
+        { isActive: { $exists: false } }
+    ]
+})
 
 const getDashboardStats = async (req, res) => {
     try {
+        const activeProductQuery = getActiveProductQuery()
         const [productsCount, usersCount, activeSessions, orders, lowStockProducts] = await Promise.all([
-            Product.countDocuments({ isActive: true }),
+            Product.countDocuments(activeProductQuery),
             User.countDocuments({ role: "user" }),
-            User.countDocuments({ isSessionActive: true }),
+            User.countDocuments({ role: "user", isSessionActive: true }),
             Order.find().populate("products.product"),
-            Product.countDocuments({ isActive: true, countInStock: { $lte: 5 } })
+            Product.countDocuments({
+                ...activeProductQuery,
+                countInStock: { $lte: 5 }
+            })
         ])
+
+        await syncOrderStatuses(orders)
 
         const revenue = orders.reduce((sum, order) => sum + (order.totalPrice || 0), 0)
 
-        const orderStatusChart = ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"].map((status) => ({
+        const orderStatusChart = [...STATUS_FLOW, "Cancelled"].map((status) => ({
             label: status,
             value: orders.filter((order) => order.status === status).length
         }))

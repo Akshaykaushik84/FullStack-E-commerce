@@ -21,6 +21,7 @@
 
 body {
   margin: 0;
+  overflow-x: hidden;
   background: linear-gradient(180deg, var(--brand-50) 0%, #ffffff 45%, var(--surface-50) 100%);
   color: var(--ink-900);
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;

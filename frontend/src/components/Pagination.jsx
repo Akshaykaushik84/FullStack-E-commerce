@@ -13,12 +13,12 @@ const Pagination = ({
   const pages = Array.from({ length: end - start + 1 }, (_, index) => start + index);
 
   return (
-    <div className={`flex flex-wrap items-center justify-center gap-3 ${className}`}>
+    <div className={`flex flex-wrap items-center justify-center gap-2 sm:gap-3 ${className}`}>
       <button
         type="button"
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 disabled:opacity-50"
+        className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 disabled:opacity-50 sm:px-4"
       >
         Previous
       </button>
@@ -42,7 +42,7 @@ const Pagination = ({
         type="button"
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 disabled:opacity-50"
+        className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 disabled:opacity-50 sm:px-4"
       >
         Next
       </button>

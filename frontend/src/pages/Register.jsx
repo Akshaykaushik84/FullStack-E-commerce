@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { registerUser } from "../api/authApi.jsx";
+import { claimAuthTab, hasAnotherActiveAuthTab } from "../utils/authSession";
 
 const Register = () => {
   const [name, setName] = useState("");
@@ -9,8 +10,14 @@ const Register = () => {
   const navigate = useNavigate();
 
   const handleRegister = () => {
+    if (hasAnotherActiveAuthTab()) {
+      alert("An account is already active in another tab. Please use that tab or close it first.");
+      return;
+    }
+
     registerUser({ name, email, password })
       .then((res) => {
+        claimAuthTab();
         localStorage.setItem("token", res.data.token);
         localStorage.setItem("user", JSON.stringify(res.data.user));
         alert("Registered successfully!");
@@ -22,13 +29,13 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(135deg,var(--brand-50)_0%,#ffffff_45%,#e6fffb_100%)] px-4 py-12">
-      <div className="max-w-5xl mx-auto grid lg:grid-cols-[1fr_1.05fr] gap-8 items-stretch">
-        <div className="rounded-[2rem] bg-[var(--ink-900)] text-white p-8 md:p-10 shadow-2xl">
+    <div className="min-h-screen bg-[linear-gradient(135deg,var(--brand-50)_0%,#ffffff_45%,#e6fffb_100%)] px-3 py-6 sm:px-4 sm:py-12">
+      <div className="mx-auto grid max-w-5xl gap-6 items-stretch lg:grid-cols-[1fr_1.05fr] lg:gap-8">
+        <div className="rounded-[2rem] bg-[var(--ink-900)] p-6 text-white shadow-2xl sm:p-8 md:p-10">
           <p className="text-sm uppercase tracking-[0.35em] text-teal-300 mb-4">
             Create Account
           </p>
-          <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-4">
+          <h1 className="text-3xl font-bold leading-tight mb-4 sm:text-4xl md:text-5xl">
             Join the store and personalize your shopping journey
           </h1>
           <p className="text-slate-200 text-lg mb-8">
@@ -47,7 +54,7 @@ const Register = () => {
           </div>
         </div>
 
-        <div className="rounded-[2rem] bg-white/95 backdrop-blur p-8 md:p-10 shadow-xl border border-white">
+        <div className="rounded-[2rem] border border-white bg-white/95 p-5 shadow-xl backdrop-blur sm:p-8 md:p-10">
           <h2 className="text-3xl font-bold text-slate-900 mb-2">Register</h2>
           <p className="text-slate-600 mb-8">
             Create your account to get started.

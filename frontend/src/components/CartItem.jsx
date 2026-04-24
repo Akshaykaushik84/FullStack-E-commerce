@@ -2,19 +2,19 @@
 
 const CartItem = ({ item, onUpdateQuantity, onRemove }) => {
   return (
-    <div className="grid gap-4 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-[120px_1fr_auto] md:items-center">
+    <div className="grid gap-4 rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-5 md:grid-cols-[110px_1fr_auto] md:items-center lg:grid-cols-[120px_1fr_auto]">
       <img
         src={item.product?.image}
         alt={item.product?.name}
-        className="h-28 w-full rounded-2xl object-cover"
+        className="h-48 w-full rounded-2xl object-cover sm:h-36 md:h-28"
       />
 
       <div>
         <p className="text-xs uppercase tracking-[0.25em] text-slate-400">
           {item.product?.category || "General"}
         </p>
-        <h3 className="mt-2 text-xl font-semibold text-slate-900">{item.product?.name}</h3>
-        <p className="mt-1 text-sm text-slate-600">{item.product?.description}</p>
+        <h3 className="mt-2 text-lg font-semibold text-slate-900 sm:text-xl">{item.product?.name}</h3>
+        <p className="mt-1 line-clamp-2 text-sm text-slate-600">{item.product?.description}</p>
         <p className="mt-3 text-lg font-bold text-[var(--brand-700)]">
           {formatPrice(item.product?.price)}
         </p>

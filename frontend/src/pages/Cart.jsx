@@ -122,11 +122,11 @@ const Cart = () => {
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,var(--surface-50)_0%,#ffffff_100%)]">
       <Navbar />
-      <div className="mx-auto max-w-7xl px-5 pb-16 pt-28">
-        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+      <div className="mx-auto max-w-7xl px-3 pb-28 pt-24 sm:px-5 sm:pt-28 lg:pb-16">
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm uppercase tracking-[0.35em] text-[var(--brand-500)]">Cart</p>
-            <h1 className="mt-2 text-4xl font-bold text-slate-900">Your shopping bag</h1>
+            <h1 className="mt-2 text-3xl font-bold text-slate-900 sm:text-4xl">Your shopping bag</h1>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
             <p className="text-sm text-slate-500">Items in cart</p>
@@ -137,7 +137,7 @@ const Cart = () => {
         {loading ? (
           <div className="rounded-[2rem] border border-slate-200 bg-white p-10 text-center text-slate-500 shadow-sm">Loading cart...</div>
         ) : cart.items.length ? (
-          <div className="grid gap-8 xl:grid-cols-[1.15fr_0.85fr]">
+          <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr] xl:gap-8">
             <div className="space-y-5">
               {cart.items.map((item) => (
                 <CartItem key={item._id} item={item} onUpdateQuantity={handleQuantityChange} onRemove={handleRemove} />
@@ -145,7 +145,7 @@ const Cart = () => {
             </div>
 
             <div className="space-y-6">
-              <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
                 <h2 className="text-2xl font-semibold text-slate-900">Order summary</h2>
                 <div className="mt-5 space-y-3 text-sm">
                   <div className="flex justify-between text-slate-600"><span>Subtotal</span><span>{formatPrice(cart.subtotal)}</span></div>
@@ -156,7 +156,7 @@ const Cart = () => {
                 </div>
                 <div className="mt-5 space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                   <p className="text-sm font-semibold text-slate-900">Have a coupon?</p>
-                  <div className="flex gap-3">
+                  <div className="flex flex-col gap-3 sm:flex-row">
                     <input value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} placeholder="Enter coupon code" className="flex-1 rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" />
                     <button type="button" onClick={handleApplyCoupon} className="rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">Apply</button>
                   </div>
@@ -164,7 +164,7 @@ const Cart = () => {
                 </div>
               </div>
 
-              <form onSubmit={handlePlaceOrder} className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+              <form onSubmit={handlePlaceOrder} className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
                 <h2 className="text-2xl font-semibold text-slate-900">Checkout details</h2>
                 <div className="mt-5 grid gap-4 md:grid-cols-2">
                   <input name="fullName" value={checkoutForm.fullName} onChange={handleCheckoutChange} placeholder="Full name" className="rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" required />

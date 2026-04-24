@@ -32,12 +32,12 @@ const Wishlist = () => {
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,var(--surface-50)_0%,#ffffff_100%)]">
       <Navbar />
-      <div className="mx-auto max-w-7xl px-5 pb-16 pt-28">
+      <div className="mx-auto max-w-7xl px-3 pb-28 pt-24 sm:px-5 sm:pt-28 lg:pb-16">
         <div className="mb-8">
           <p className="text-sm uppercase tracking-[0.35em] text-[var(--brand-500)]">
             Wishlist
           </p>
-          <h1 className="mt-2 text-4xl font-bold text-slate-900">
+          <h1 className="mt-2 text-3xl font-bold text-slate-900 sm:text-4xl">
             Products you want to revisit
           </h1>
           <p className="mt-3 text-slate-500">
@@ -51,7 +51,7 @@ const Wishlist = () => {
           </div>
         ) : items.length ? (
           <div className="space-y-8">
-            <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {visibleItems.map((product) => (
                 <ProductCard
                   key={product._id}

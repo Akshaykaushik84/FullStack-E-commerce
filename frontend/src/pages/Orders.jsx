@@ -40,12 +40,12 @@ const Orders = () => {
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,var(--surface-50)_0%,#ffffff_100%)]">
       <Navbar />
-      <div className="mx-auto max-w-7xl px-5 pb-16 pt-28">
+      <div className="mx-auto max-w-7xl px-3 pb-28 pt-24 sm:px-5 sm:pt-28 lg:pb-16">
         <div className="mb-8">
           <p className="text-sm uppercase tracking-[0.35em] text-[var(--brand-500)]">
             Orders
           </p>
-          <h1 className="mt-2 text-4xl font-bold text-slate-900">
+          <h1 className="mt-2 text-3xl font-bold text-slate-900 sm:text-4xl">
             Track your purchases
           </h1>
           <p className="mt-3 text-slate-500">
@@ -71,7 +71,7 @@ const Orders = () => {
                     key={order._id}
                     className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm"
                   >
-                    <div className="grid gap-4 border-b border-slate-100 pb-5 md:grid-cols-4">
+                    <div className="grid gap-4 border-b border-slate-100 pb-5 sm:grid-cols-2 xl:grid-cols-4">
                       <div>
                         <p className="text-sm text-slate-500">Order ID</p>
                         <p className="font-semibold text-slate-900">{order._id}</p>
@@ -99,7 +99,7 @@ const Orders = () => {
                         {(order.products || []).map((item) => (
                           <div
                             key={item._id}
-                            className="flex items-center gap-4 rounded-2xl bg-slate-50 p-4"
+                            className="flex flex-col gap-4 rounded-2xl bg-slate-50 p-4 sm:flex-row sm:items-center"
                           >
                             <img
                               src={item.image || item.product?.image}

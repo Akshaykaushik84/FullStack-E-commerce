@@ -129,9 +129,9 @@ const Profile = () => {
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,var(--brand-50)_0%,#f8fbff_35%,#ffffff_100%)]">
       <Navbar />
-      <div className="mx-auto max-w-6xl px-6 pb-14 pt-28">
-        <div className="grid gap-8 xl:grid-cols-[0.95fr_1.35fr]">
-          <div className="sticky top-28 rounded-[2rem] bg-[var(--ink-900)] p-8 text-white shadow-2xl">
+      <div className="mx-auto max-w-6xl px-3 pb-28 pt-24 sm:px-6 sm:pt-28 lg:pb-14">
+        <div className="grid gap-6 xl:grid-cols-[0.95fr_1.35fr] xl:gap-8">
+          <div className="rounded-[2rem] bg-[var(--ink-900)] p-5 text-white shadow-2xl sm:p-8 xl:sticky xl:top-28">
             <div className="h-28 w-28 overflow-hidden rounded-[2rem] border-4 border-white/10 bg-[var(--brand-500)]">
               <img
                 src={profileForm.profileImage || DEFAULT_PROFILE_IMAGE}
@@ -141,7 +141,7 @@ const Profile = () => {
             </div>
 
             <p className="mt-6 text-xs uppercase tracking-[0.35em] text-cyan-300">Profile Snapshot</p>
-            <h2 className="mt-3 text-3xl font-bold">{profileForm.name || "Customer"}</h2>
+            <h2 className="mt-3 text-2xl font-bold sm:text-3xl">{profileForm.name || "Customer"}</h2>
             <p className="mt-1 text-slate-300">{profileForm.email}</p>
             <p className="mt-1 text-slate-300">{profileForm.phone || "Phone not added"}</p>
 
@@ -168,9 +168,9 @@ const Profile = () => {
           </div>
 
           <div className="space-y-8">
-            <div className="rounded-[2rem] border border-white bg-white/95 p-8 shadow-xl backdrop-blur">
+            <div className="rounded-[2rem] border border-white bg-white/95 p-5 shadow-xl backdrop-blur sm:p-8">
               <p className="text-sm uppercase tracking-[0.3em] text-[var(--brand-500)]">My Account</p>
-              <h1 className="mt-3 text-4xl font-bold text-slate-900">Personal details</h1>
+              <h1 className="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">Personal details</h1>
               <p className="mt-3 text-slate-600">
                 Keep your account information up to date for smoother checkout and delivery.
               </p>
@@ -189,7 +189,7 @@ const Profile = () => {
               </form>
             </div>
 
-            <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
+            <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
               <h2 className="text-2xl font-semibold text-slate-900">Security and recovery</h2>
               <p className="mt-3 text-slate-600">
                 Password and recovery actions are handled from the login page using the forgot password flow.
