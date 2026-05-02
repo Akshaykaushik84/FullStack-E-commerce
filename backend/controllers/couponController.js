@@ -1,4 +1,4 @@
-﻿const Coupon = require("../models/Coupon")
+const Coupon = require("../models/Coupon")
 
 const normalizeCouponCode = (code) => String(code || "").trim().toUpperCase()
 
@@ -17,6 +17,15 @@ const computeCouponDiscount = (coupon, subtotal) => {
 
     return Number(((subtotal * coupon.discountValue) / 100).toFixed(2))
 }
+
+const buildCouponPayload = (body = {}) => ({
+    code: normalizeCouponCode(body.code),
+    description: String(body.description || "").trim(),
+    discountType: body.discountType === "flat" ? "flat" : "percentage",
+    discountValue: Number(body.discountValue || 0),
+    minimumOrderAmount: Number(body.minimumOrderAmount || 0),
+    isActive: body.isActive !== false
+})
 
 const validateCoupon = async (req, res) => {
     try {
@@ -54,6 +63,75 @@ const validateCoupon = async (req, res) => {
     }
 }
 
+const getCoupons = async (_req, res) => {
+    try {
+        const coupons = await Coupon.find().sort({ createdAt: -1 })
+        res.json(coupons)
+    } catch (err) {
+        res.status(500).json({ message: err.message })
+    }
+}
+
+const createCoupon = async (req, res) => {
+    try {
+        const payload = buildCouponPayload(req.body)
+
+        if (!payload.code) {
+            return res.status(400).json({ message: "Coupon code is required" })
+        }
+
+        const existingCoupon = await Coupon.findOne({ code: payload.code })
+
+        if (existingCoupon) {
+            return res.status(400).json({ message: "Coupon code already exists" })
+        }
+
+        const coupon = await Coupon.create(payload)
+        res.status(201).json(coupon)
+    } catch (err) {
+        res.status(400).json({ message: err.message })
+    }
+}
+
+const updateCoupon = async (req, res) => {
+    try {
+        const payload = buildCouponPayload(req.body)
+        const existing = await Coupon.findOne({ code: payload.code, _id: { $ne: req.params.id } })
+
+        if (existing) {
+            return res.status(400).json({ message: "Coupon code already exists" })
+        }
+
+        const coupon = await Coupon.findByIdAndUpdate(
+            req.params.id,
+            payload,
+            { returnDocument: "after", runValidators: true }
+        )
+
+        if (!coupon) {
+            return res.status(404).json({ message: "Coupon not found" })
+        }
+
+        res.json(coupon)
+    } catch (err) {
+        res.status(400).json({ message: err.message })
+    }
+}
+
+const deleteCoupon = async (req, res) => {
+    try {
+        const coupon = await Coupon.findByIdAndDelete(req.params.id)
+
+        if (!coupon) {
+            return res.status(404).json({ message: "Coupon not found" })
+        }
+
+        res.json({ message: "Coupon deleted successfully" })
+    } catch (err) {
+        res.status(500).json({ message: err.message })
+    }
+}
+
 const seedDefaultCoupons = async () => {
     const coupons = [
         {
@@ -85,6 +163,10 @@ const seedDefaultCoupons = async () => {
 
 module.exports = {
     validateCoupon,
+    getCoupons,
+    createCoupon,
+    updateCoupon,
+    deleteCoupon,
     seedDefaultCoupons,
     computeCouponDiscount,
     normalizeCouponCode

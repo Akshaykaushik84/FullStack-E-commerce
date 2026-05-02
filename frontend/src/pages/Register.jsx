@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { registerUser } from "../api/authApi.jsx";
 import { claimAuthTab, hasAnotherActiveAuthTab } from "../utils/authSession";
+import { setStoredToken, setStoredUser } from "../utils/authStorage.js";
 
 const Register = () => {
   const [name, setName] = useState("");
@@ -10,16 +11,16 @@ const Register = () => {
   const navigate = useNavigate();
 
   const handleRegister = () => {
-    if (hasAnotherActiveAuthTab()) {
+    if (hasAnotherActiveAuthTab(email)) {
       alert("An account is already active in another tab. Please use that tab or close it first.");
       return;
     }
 
     registerUser({ name, email, password })
       .then((res) => {
-        claimAuthTab();
-        localStorage.setItem("token", res.data.token);
-        localStorage.setItem("user", JSON.stringify(res.data.user));
+        claimAuthTab(res.data.user?.email || email);
+        setStoredToken(res.data.token);
+        setStoredUser(res.data.user);
         alert("Registered successfully!");
         navigate("/");
       })

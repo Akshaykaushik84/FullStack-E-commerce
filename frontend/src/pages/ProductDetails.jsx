@@ -2,15 +2,17 @@
 import { Heart, ShoppingCart, Star } from "lucide-react";
 import { useParams } from "react-router-dom";
 import Navbar from "../components/NavbarComp";
+import Footer from "../components/Footer";
 import { addToCart } from "../api/cartApi.jsx";
 import { createProductReview, getSingleProduct } from "../api/productApi.jsx";
 import { getWishlist, toggleWishlist } from "../api/wishlistApi.jsx";
+import { getStoredToken } from "../utils/authStorage.js";
 
 const formatPrice = (price) => `Rs ${Number(price || 0).toFixed(0)}`;
 
 const ProductDetails = () => {
   const { id } = useParams();
-  const token = localStorage.getItem("token");
+  const token = getStoredToken();
   const [product, setProduct] = useState(null);
   const [wishlisted, setWishlisted] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -155,6 +157,7 @@ const ProductDetails = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

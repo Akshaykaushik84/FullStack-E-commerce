@@ -40,10 +40,22 @@ const orderSchema = new mongoose.Schema(
         shippingFee: { type: Number, required: true, min: 0 },
         taxPrice: { type: Number, required: true, min: 0 },
         totalPrice: { type: Number, required: true, min: 0 },
+        invoiceNumber: {
+            type: String,
+            default: ""
+        },
         status: {
             type: String,
-            enum: ["Pending", "Approved", "Shipped", "Delivered", "Cancelled"],
+            enum: ["Pending", "Approved", "Shipped", "Delivered", "Cancelled", "Return Requested", "Returned"],
             default: "Pending"
+        },
+        cancelReason: {
+            type: String,
+            default: ""
+        },
+        returnReason: {
+            type: String,
+            default: ""
         }
     },
     { timestamps: true }

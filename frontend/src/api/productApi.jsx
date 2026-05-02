@@ -6,7 +6,13 @@ export const getSingleProduct = (id) => apiClient.get(`/products/${id}`);
 
 export const createProductReview = (id, reviewData, token) =>
   apiClient.post(`/products/${id}/reviews`, reviewData, {
-    headers: getAuthHeaders(token),
+    headers:
+      reviewData instanceof FormData
+        ? {
+            ...getAuthHeaders(token),
+            "Content-Type": "multipart/form-data",
+          }
+        : getAuthHeaders(token),
   });
 
 export const createProduct = (productData, token) =>

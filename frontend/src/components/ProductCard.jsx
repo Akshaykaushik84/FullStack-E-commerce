@@ -2,11 +2,12 @@
 import { Link } from "react-router-dom";
 import { addToCart } from "../api/cartApi.jsx";
 import { toggleWishlist } from "../api/wishlistApi.jsx";
+import { getStoredToken } from "../utils/authStorage.js";
 
 const formatPrice = (price) => `Rs ${Number(price || 0).toFixed(0)}`;
 
 const ProductCard = ({ product, onAdded, onWishlistChanged, isWishlisted = false }) => {
-  const token = localStorage.getItem("token");
+  const token = getStoredToken();
   const availableStock = Number.isFinite(Number(product.countInStock))
     ? Number(product.countInStock)
     : 25;

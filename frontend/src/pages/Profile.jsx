@@ -2,23 +2,11 @@
 import { Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/NavbarComp";
+import Footer from "../components/Footer";
 import { getProfile, updateProfile, uploadProfileImage } from "../api/authApi.jsx";
+import { getStoredToken, getStoredUser, setStoredUser } from "../utils/authStorage.js";
 
 const DEFAULT_PROFILE_IMAGE = "https://www.pngall.com/wp-content/uploads/5/Profile-Transparent.png";
-
-const getStoredUser = () => {
-  try {
-    const rawUser = localStorage.getItem("user");
-
-    if (!rawUser || rawUser === "undefined" || rawUser === "null") {
-      return null;
-    }
-
-    return JSON.parse(rawUser);
-  } catch {
-    return null;
-  }
-};
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -37,7 +25,7 @@ const Profile = () => {
   const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = getStoredToken();
 
     if (!token) {
       navigate("/login");
@@ -60,7 +48,7 @@ const Profile = () => {
         };
 
         setProfileForm(nextUser);
-        localStorage.setItem("user", JSON.stringify(nextUser));
+        setStoredUser(nextUser);
       })
       .catch(() => {
         if (!storedUser) {
@@ -90,7 +78,7 @@ const Profile = () => {
       .then((res) => {
         const nextUser = res.data.user;
         setProfileForm((prev) => ({ ...prev, ...nextUser }));
-        localStorage.setItem("user", JSON.stringify(nextUser));
+        setStoredUser(nextUser);
         alert(res.data.message || "Profile updated successfully");
       })
       .catch((err) => alert(err.response?.data?.message || "Profile update failed"))
@@ -111,7 +99,7 @@ const Profile = () => {
     uploadProfileImage(formData)
       .then((res) => {
         setProfileForm((prev) => ({ ...prev, profileImage: res.data.imageUrl }));
-        localStorage.setItem("user", JSON.stringify(res.data.user));
+        setStoredUser(res.data.user);
       })
       .catch((err) => alert(err.response?.data?.message || "Image upload failed"))
       .finally(() => setUploadingImage(false));
@@ -198,6 +186,7 @@ const Profile = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

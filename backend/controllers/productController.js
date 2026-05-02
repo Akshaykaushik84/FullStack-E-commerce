@@ -1,4 +1,5 @@
-﻿const Product = require("../models/Product")
+const path = require("path")
+const Product = require("../models/Product")
 
 const getActiveProductQuery = () => ({
     $or: [
@@ -40,6 +41,14 @@ const recalculateRatings = (product) => {
     )
 }
 
+const buildReviewImageUrl = (req) => {
+    if (!req.file?.path) {
+        return ""
+    }
+
+    return `${req.protocol}://${req.get("host")}/uploads/${path.basename(req.file.path)}`
+}
+
 exports.createProduct = async (req, res) => {
     try {
         const product = await Product.create(buildProductPayload(req.body))
@@ -52,7 +61,7 @@ exports.createProduct = async (req, res) => {
 exports.getProducts = async (req, res) => {
     try {
         const page = Math.max(Number(req.query.page || 1), 1)
-        const limit = Math.min(Math.max(Number(req.query.limit || 8), 1), 24)
+        const limit = Math.min(Math.max(Number(req.query.limit || 8), 1), 50)
         const skip = (page - 1) * limit
         const search = String(req.query.search || "").trim()
         const category = String(req.query.category || "").trim()
@@ -150,7 +159,8 @@ exports.createProductReview = async (req, res) => {
             name: req.user.name || req.body.name || "Customer",
             email: req.user.email || req.body.email || "customer@example.com",
             rating: Number(req.body.rating),
-            comment: String(req.body.comment || "").trim()
+            comment: String(req.body.comment || "").trim(),
+            image: buildReviewImageUrl(req)
         }
 
         if (!review.comment || !review.rating) {

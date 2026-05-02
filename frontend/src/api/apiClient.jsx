@@ -10,5 +10,3 @@ export const apiClient = axios.create({
 export const getAuthHeaders = (token) => ({
   Authorization: token?.startsWith("Bearer ") ? token : `Bearer ${token}`,
 });
-
-export const getStoredToken = () => localStorage.getItem("token") || "";

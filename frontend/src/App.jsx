@@ -16,12 +16,8 @@ import Cart from "./pages/Cart";
 import Orders from "./pages/Orders";
 import ProductDetails from "./pages/ProductDetails";
 import Wishlist from "./pages/Wishlist";
-import {
-  clearStoredAuth,
-  getActiveAuthTab,
-  getTabId,
-  releaseAuthTab,
-} from "./utils/authSession";
+import { forceClearCurrentTabAuth, getActiveAuthOwner, getTabId, releaseAuthTab } from "./utils/authSession";
+import { getStoredToken, getStoredUser } from "./utils/authStorage";
 
 const AuthTabGuard = () => {
   const navigate = useNavigate();
@@ -30,13 +26,19 @@ const AuthTabGuard = () => {
   useEffect(() => {
     const currentTab = getTabId();
 
-    const enforceSingleTab = () => {
-      const token = localStorage.getItem("token");
-      const activeTab = getActiveAuthTab();
+    const enforcePerUserTabLock = () => {
+      const token = getStoredToken();
+      const user = getStoredUser();
       const isAuthPage = location.pathname === "/login" || location.pathname === "/register";
 
-      if (token && activeTab && activeTab !== currentTab) {
-        clearStoredAuth();
+      if (!token || !user?.email) {
+        return;
+      }
+
+      const ownerTab = getActiveAuthOwner(user.email);
+
+      if (ownerTab && ownerTab !== currentTab) {
+        forceClearCurrentTabAuth();
 
         if (!isAuthPage) {
           navigate("/login", {
@@ -52,12 +54,12 @@ const AuthTabGuard = () => {
     };
 
     const handleStorage = (event) => {
-      if (event.key === "mystore_active_auth_tab" || event.key === "token") {
-        enforceSingleTab();
+      if (event.key === "mystore_active_users") {
+        enforcePerUserTabLock();
       }
     };
 
-    enforceSingleTab();
+    enforcePerUserTabLock();
     window.addEventListener("beforeunload", handleBeforeUnload);
     window.addEventListener("storage", handleStorage);
 

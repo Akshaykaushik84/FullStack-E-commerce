@@ -30,11 +30,43 @@ const getDashboardStats = async (req, res) => {
         await syncOrderStatuses(orders)
 
         const revenue = orders.reduce((sum, order) => sum + (order.totalPrice || 0), 0)
+        const salesTrendMap = new Map()
+
+        orders.forEach((order) => {
+            const dateKey = new Date(order.createdAt).toISOString().slice(0, 10)
+            const existing = salesTrendMap.get(dateKey) || { label: dateKey, value: 0, revenue: 0 }
+            existing.value += 1
+            existing.revenue += Number(order.totalPrice || 0)
+            salesTrendMap.set(dateKey, existing)
+        })
+
+        const productVolumeMap = new Map()
+
+        orders.forEach((order) => {
+            ;(order.products || []).forEach((item) => {
+                const label = item.name || item.product?.name || "Product"
+                const existing = productVolumeMap.get(label) || 0
+                productVolumeMap.set(label, existing + Number(item.quantity || 0))
+            })
+        })
 
         const orderStatusChart = [...STATUS_FLOW, "Cancelled"].map((status) => ({
             label: status,
             value: orders.filter((order) => order.status === status).length
         }))
+
+        const salesTrend = Array.from(salesTrendMap.values())
+            .sort((a, b) => a.label.localeCompare(b.label))
+            .slice(-7)
+            .map((item) => ({
+                label: item.label,
+                value: Number(item.revenue.toFixed(2))
+            }))
+
+        const topProducts = Array.from(productVolumeMap.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 6)
+            .map(([label, value]) => ({ label, value }))
 
         const recentUsers = await User.find({ role: "user" })
             .sort({ createdAt: -1 })
@@ -55,9 +87,104 @@ const getDashboardStats = async (req, res) => {
                 recentUsers: recentUsers.map((user) => ({
                     label: user.name,
                     value: 1
-                }))
+                })),
+                salesTrend,
+                topProducts
             }
         })
+    } catch (err) {
+        res.status(500).json({ message: err.message })
+    }
+}
+
+const getSalesReport = async (_req, res) => {
+    try {
+        const orders = await Order.find()
+            .sort({ createdAt: -1 })
+            .populate("user", "name email")
+            .populate("products.product", "name category")
+
+        await syncOrderStatuses(orders)
+
+        const summary = {
+            totalOrders: orders.length,
+            totalRevenue: Number(orders.reduce((sum, order) => sum + Number(order.totalPrice || 0), 0).toFixed(2)),
+            totalDiscount: Number(orders.reduce((sum, order) => sum + Number(order.discountAmount || 0), 0).toFixed(2)),
+            cancelledOrders: orders.filter((order) => order.status === "Cancelled").length,
+            returnedOrders: orders.filter((order) => order.status === "Returned").length,
+            returnRequests: orders.filter((order) => order.status === "Return Requested").length
+        }
+
+        const rows = orders.map((order) => ({
+            orderId: order._id,
+            invoiceNumber: order.invoiceNumber || "",
+            customerName: order.user?.name || "Customer",
+            customerEmail: order.user?.email || "",
+            items: (order.products || []).reduce((sum, item) => sum + Number(item.quantity || 0), 0),
+            itemsPrice: Number(order.itemsPrice || 0),
+            discountAmount: Number(order.discountAmount || 0),
+            shippingFee: Number(order.shippingFee || 0),
+            taxPrice: Number(order.taxPrice || 0),
+            totalPrice: Number(order.totalPrice || 0),
+            paymentMethod: order.paymentMethod,
+            paymentStatus: order.paymentStatus,
+            status: order.status,
+            createdAt: order.createdAt
+        }))
+
+        res.json({ summary, rows })
+    } catch (err) {
+        res.status(500).json({ message: err.message })
+    }
+}
+
+const exportSalesReport = async (_req, res) => {
+    try {
+        const orders = await Order.find()
+            .sort({ createdAt: -1 })
+            .populate("user", "name email")
+
+        await syncOrderStatuses(orders)
+
+        const escapeCsv = (value) => `"${String(value ?? "").replace(/"/g, "\"\"")}"`
+        const headers = [
+            "Invoice Number",
+            "Order ID",
+            "Customer Name",
+            "Customer Email",
+            "Status",
+            "Payment Method",
+            "Payment Status",
+            "Items Price",
+            "Discount",
+            "Shipping",
+            "Tax",
+            "Total",
+            "Placed At"
+        ]
+
+        const lines = [
+            headers.join(","),
+            ...orders.map((order) => ([
+                order.invoiceNumber || "",
+                order._id,
+                order.user?.name || "Customer",
+                order.user?.email || "",
+                order.status,
+                order.paymentMethod,
+                order.paymentStatus,
+                Number(order.itemsPrice || 0).toFixed(2),
+                Number(order.discountAmount || 0).toFixed(2),
+                Number(order.shippingFee || 0).toFixed(2),
+                Number(order.taxPrice || 0).toFixed(2),
+                Number(order.totalPrice || 0).toFixed(2),
+                new Date(order.createdAt).toISOString()
+            ]).map(escapeCsv).join(","))
+        ]
+
+        res.setHeader("Content-Type", "text/csv; charset=utf-8")
+        res.setHeader("Content-Disposition", 'attachment; filename="sales-report.csv"')
+        res.send(lines.join("\n"))
     } catch (err) {
         res.status(500).json({ message: err.message })
     }
@@ -187,6 +314,8 @@ const seedHardcodedAdmin = async () => {
 
 module.exports = {
     getDashboardStats,
+    getSalesReport,
+    exportSalesReport,
     getUsers,
     deleteUser,
     getAllCarts,

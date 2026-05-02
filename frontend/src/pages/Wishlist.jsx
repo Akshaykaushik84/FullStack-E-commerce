@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import Navbar from "../components/NavbarComp";
+import Footer from "../components/Footer";
 import ProductCard from "../components/ProductCard";
 import Pagination from "../components/Pagination";
 import { getWishlist } from "../api/wishlistApi.jsx";
+import { getStoredToken } from "../utils/authStorage.js";
 
 const Wishlist = () => {
-  const token = localStorage.getItem("token");
+  const token = getStoredToken();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -82,6 +84,7 @@ const Wishlist = () => {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 };

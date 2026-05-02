@@ -24,7 +24,7 @@ const getTimedOrderStatus = (createdAt) => {
     return "Pending"
 }
 
-const shouldAutoProgress = (status) => status !== "Cancelled"
+const shouldAutoProgress = (status) => !["Cancelled", "Return Requested", "Returned"].includes(status)
 
 const syncOrderStatus = async (order) => {
     if (!order || !shouldAutoProgress(order.status)) {
@@ -35,7 +35,7 @@ const syncOrderStatus = async (order) => {
 
     if (order.status !== nextStatus) {
         order.status = nextStatus
-        await order.save()
+        await order.updateOne({ $set: { status: nextStatus } }, { runValidators: false })
     }
 
     return order

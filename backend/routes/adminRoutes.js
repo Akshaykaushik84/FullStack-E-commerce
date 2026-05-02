@@ -4,6 +4,8 @@ const adminMiddleware = require("../middleware/adminMiddleware")
 const authMiddleware = require("../middleware/authMiddleware")
 const {
     getDashboardStats,
+    getSalesReport,
+    exportSalesReport,
     getUsers,
     deleteUser,
     getAllCarts,
@@ -13,6 +15,8 @@ const {
 router.use(authMiddleware, adminMiddleware)
 
 router.get("/stats", getDashboardStats)
+router.get("/sales-report", getSalesReport)
+router.get("/sales-report/export", exportSalesReport)
 router.get("/users", getUsers)
 router.delete("/users/:id", deleteUser)
 router.get("/carts", getAllCarts)

@@ -1,10 +1,12 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/NavbarComp";
+import Footer from "../components/Footer";
 import CartItem from "../components/CartItem";
 import { getCart, removeFromCart, updateCartQuantity } from "../api/cartApi.jsx";
 import { placeOrder } from "../api/orderApi.jsx";
 import { validateCoupon } from "../api/couponApi.jsx";
+import { getStoredToken } from "../utils/authStorage.js";
 
 const initialCheckoutForm = {
   fullName: "",
@@ -20,7 +22,7 @@ const initialCheckoutForm = {
 const formatPrice = (price) => `Rs ${Number(price || 0).toFixed(0)}`;
 
 const Cart = () => {
-  const token = localStorage.getItem("token");
+  const token = getStoredToken();
   const navigate = useNavigate();
   const [cart, setCart] = useState({ items: [], subtotal: 0, totalItems: 0 });
   const [checkoutForm, setCheckoutForm] = useState(initialCheckoutForm);
@@ -193,6 +195,7 @@ const Cart = () => {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 };

@@ -3,22 +3,9 @@ import { Link, useLocation } from "react-router-dom";
 import { Heart, Home, Menu, Package, Shield, ShoppingCart, User, X } from "lucide-react";
 import { logoutUser } from "../api/authApi.jsx";
 import { releaseAuthTab } from "../utils/authSession";
+import { clearStoredAuth, getStoredToken, getStoredUser } from "../utils/authStorage.js";
 
 const DEFAULT_PROFILE_IMAGE = "https://www.pngall.com/wp-content/uploads/5/Profile-Transparent.png";
-
-const getStoredUser = () => {
-  try {
-    const rawUser = localStorage.getItem("user");
-
-    if (!rawUser || rawUser === "undefined" || rawUser === "null") {
-      return null;
-    }
-
-    return JSON.parse(rawUser);
-  } catch {
-    return null;
-  }
-};
 
 const iconLinkClass = (isActive) =>
   `group relative flex h-11 w-11 items-center justify-center rounded-full border transition ${
@@ -34,7 +21,7 @@ const HoverLabel = ({ text }) => (
 );
 
 const NavbarComp = () => {
-  const token = localStorage.getItem("token");
+  const token = getStoredToken();
   const user = getStoredUser();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -44,8 +31,7 @@ const NavbarComp = () => {
       .catch(() => null)
       .finally(() => {
         releaseAuthTab();
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
+        clearStoredAuth();
         window.location.href = "/login";
       });
   };
@@ -71,12 +57,12 @@ const NavbarComp = () => {
       <div className="fixed left-0 top-0 z-50 w-full border-b border-[var(--brand-100)] bg-white/88 backdrop-blur-xl shadow-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-5">
           <Link to="/" className="flex min-w-0 items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--brand-600)] text-base font-bold text-white shadow-lg shadow-blue-200 sm:h-11 sm:w-11 sm:text-lg">
-              M
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,var(--brand-600)_0%,var(--accent-500)_100%)] text-base font-bold text-white shadow-lg shadow-blue-200 sm:h-11 sm:w-11 sm:text-lg">
+              CS
             </div>
             <div className="min-w-0">
-              <p className="truncate text-base font-semibold text-slate-900 sm:text-lg">MyStore</p>
-              <p className="hidden text-xs text-slate-500 sm:block">Shop smarter every day</p>
+              <p className="truncate text-base font-semibold text-slate-900 sm:text-lg">CartSphere</p>
+              <p className="hidden text-xs text-slate-500 sm:block">Curated shopping, cleaner checkout</p>
             </div>
           </Link>
 

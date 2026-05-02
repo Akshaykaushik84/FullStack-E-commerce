@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { forgotPassword, loginUser } from "../api/authApi.jsx";
 import { claimAuthTab, hasAnotherActiveAuthTab } from "../utils/authSession";
+import { setStoredToken, setStoredUser } from "../utils/authStorage.js";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -24,16 +25,16 @@ const Login = () => {
   const handleLogin = () => {
     setLoginNotice("");
 
-    if (hasAnotherActiveAuthTab()) {
+    if (hasAnotherActiveAuthTab(email)) {
       setLoginNotice("This account is already active in another tab. Please use that tab or close it first.");
       return;
     }
 
     loginUser({ email, password })
       .then((res) => {
-        claimAuthTab();
-        localStorage.setItem("token", res.data.token);
-        localStorage.setItem("user", JSON.stringify(res.data.user));
+        claimAuthTab(res.data.user?.email || email);
+        setStoredToken(res.data.token);
+        setStoredUser(res.data.user);
         alert("Login successful!");
         navigate("/");
       })

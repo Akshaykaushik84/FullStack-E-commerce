@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Navbar from "../components/NavbarComp";
+import Footer from "../components/Footer";
 import {
   deleteAdminUser,
   getAdminCarts,
@@ -14,6 +15,7 @@ import {
   updateProduct,
 } from "../api/productApi.jsx";
 import { getUserOrders, updateOrderStatus } from "../api/orderApi.jsx";
+import { getStoredToken, getStoredUser } from "../utils/authStorage.js";
 
 const emptyProductForm = {
   name: "",
@@ -26,20 +28,6 @@ const emptyProductForm = {
   discountPercentage: "",
   tags: "",
   featured: false,
-};
-
-const getStoredUser = () => {
-  try {
-    const rawUser = localStorage.getItem("user");
-
-    if (!rawUser || rawUser === "undefined" || rawUser === "null") {
-      return null;
-    }
-
-    return JSON.parse(rawUser);
-  } catch {
-    return null;
-  }
 };
 
 const ChartCard = ({ title, data, tone = "brand" }) => {
@@ -107,7 +95,7 @@ const StatCard = ({ label, value, details, accent = "slate", active, onClick }) 
 };
 
 const AdminDashboard = () => {
-  const token = localStorage.getItem("token");
+  const token = getStoredToken();
   const user = getStoredUser();
 
   const [stats, setStats] = useState({
@@ -130,9 +118,10 @@ const AdminDashboard = () => {
   const [userPage, setUserPage] = useState(1);
   const [userPagination, setUserPagination] = useState({ page: 1, totalPages: 1 });
   const [activeInsight, setActiveInsight] = useState("products");
+  const [adminNotice, setAdminNotice] = useState("");
 
   const refreshAdminData = useCallback(() => {
-    Promise.all([
+    Promise.allSettled([
       getAdminStats(token),
       getProducts({ page: 1, limit: 50 }),
       getUserOrders(token),
@@ -140,15 +129,50 @@ const AdminDashboard = () => {
       getAdminCarts(token),
     ])
       .then(([statsRes, productsRes, ordersRes, usersRes, cartsRes]) => {
-        setStats(statsRes.data.summary);
-        setCharts(statsRes.data.charts);
-        setProducts(productsRes.data.items || []);
-        setOrders(ordersRes.data || []);
-        setUsers(usersRes.data.items || []);
-        setUserPagination(usersRes.data.pagination || { page: 1, totalPages: 1 });
-        setCarts(cartsRes.data || []);
+        const failures = [];
+
+        if (statsRes.status === "fulfilled") {
+          setStats(statsRes.value.data.summary);
+          setCharts(statsRes.value.data.charts);
+        } else {
+          failures.push("stats");
+        }
+
+        if (productsRes.status === "fulfilled") {
+          setProducts(productsRes.value.data.items || []);
+        } else {
+          failures.push("products");
+        }
+
+        if (ordersRes.status === "fulfilled") {
+          setOrders(ordersRes.value.data || []);
+        } else {
+          failures.push("orders");
+        }
+
+        if (usersRes.status === "fulfilled") {
+          setUsers(usersRes.value.data.items || []);
+          setUserPagination(usersRes.value.data.pagination || { page: 1, totalPages: 1 });
+        } else {
+          failures.push("users");
+        }
+
+        if (cartsRes.status === "fulfilled") {
+          setCarts(cartsRes.value.data || []);
+        } else {
+          failures.push("carts");
+        }
+
+        setAdminNotice(
+          failures.length
+            ? `Some admin sections could not load: ${failures.join(", ")}.`
+            : ""
+        );
       })
-      .catch((err) => console.log(err));
+      .catch((err) => {
+        console.log(err);
+        setAdminNotice("Unable to load admin dashboard data right now.");
+      });
   }, [token, userPage, userSearch]);
 
   useEffect(() => {
@@ -416,6 +440,12 @@ const AdminDashboard = () => {
             />
           ))}
         </div>
+
+        {adminNotice ? (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-700">
+            {adminNotice}
+          </div>
+        ) : null}
 
         <div className="rounded-[2rem] border border-slate-100 bg-white p-5 shadow-xl sm:p-8">
           <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
@@ -873,6 +903,7 @@ const AdminDashboard = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

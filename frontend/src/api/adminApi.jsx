@@ -17,3 +17,12 @@ export const getAdminCarts = (token) => apiClient.get("/admin/carts", getAdminCo
 
 export const getAdminUserCart = (userId, token) =>
   apiClient.get(`/admin/carts/${userId}`, getAdminConfig(token));
+
+export const getSalesReport = (token) =>
+  apiClient.get("/admin/sales-report", getAdminConfig(token));
+
+export const exportSalesReport = (token) =>
+  apiClient.get("/admin/sales-report/export", {
+    headers: getAuthHeaders(token),
+    responseType: "blob",
+  });

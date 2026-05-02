@@ -3,9 +3,11 @@ import { ArrowRight, Search, Sparkles, TrendingUp } from "lucide-react";
 import Navbar from "../components/NavbarComp";
 import Sidebar from "../components/sidebar";
 import ProductCard from "../components/ProductCard";
+import Footer from "../components/Footer";
 import { getProducts } from "../api/productApi.jsx";
 import { getWishlist } from "../api/wishlistApi.jsx";
 import Pagination from "../components/Pagination";
+import { getStoredToken } from "../utils/authStorage.js";
 
 const heroSlides = [
   {
@@ -13,24 +15,21 @@ const heroSlides = [
     title: "A cleaner storefront for everyday shopping",
     subtitle:
       "Discover curated electronics, fashion, and home essentials with faster browsing and better filtering.",
-    image:
-      "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=1200&q=80",
+    image: "https://loremflickr.com/1400/900/shopping,mall?lock=3101",
   },
   {
     eyebrow: "Trending Now",
     title: "Find top-rated picks without the noise",
     subtitle:
       "Sort by value, rating, and newest drops while keeping wishlist and cart actions one tap away.",
-    image:
-      "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=1200&q=80",
+    image: "https://loremflickr.com/1400/900/fashion,shopping?lock=3102",
   },
   {
     eyebrow: "Smart Shopping",
     title: "Built for searching, comparing, and ordering",
     subtitle:
       "A smoother catalog with stronger product discovery, cleaner layout, and sharper pagination.",
-    image:
-      "https://images.unsplash.com/photo-1606813909354-3e3d0c7f4c89?auto=format&fit=crop&w=1200&q=80",
+    image: "https://loremflickr.com/1400/900/ecommerce,store?lock=3103",
   },
 ];
 
@@ -43,7 +42,7 @@ const initialFilters = {
 };
 
 const Home = () => {
-  const token = localStorage.getItem("token");
+  const token = getStoredToken();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState(["All"]);
   const [wishlistIds, setWishlistIds] = useState([]);
@@ -298,6 +297,7 @@ const Home = () => {
           </div>
         </section>
       </div>
+      <Footer />
     </div>
   );
 };

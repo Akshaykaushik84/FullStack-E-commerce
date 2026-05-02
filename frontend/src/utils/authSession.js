@@ -1,5 +1,21 @@
+import { clearStoredAuth, getStoredUser } from "./authStorage.js";
+
 const TAB_ID_KEY = "mystore_tab_id";
-const ACTIVE_AUTH_TAB_KEY = "mystore_active_auth_tab";
+const ACTIVE_USERS_KEY = "mystore_active_users";
+
+const readActiveUsers = () => {
+  try {
+    return JSON.parse(localStorage.getItem(ACTIVE_USERS_KEY) || "{}");
+  } catch {
+    return {};
+  }
+};
+
+const writeActiveUsers = (value) => {
+  localStorage.setItem(ACTIVE_USERS_KEY, JSON.stringify(value));
+};
+
+const normalizeIdentifier = (identifier) => String(identifier || "").trim().toLowerCase();
 
 export const getTabId = () => {
   let tabId = sessionStorage.getItem(TAB_ID_KEY);
@@ -12,31 +28,50 @@ export const getTabId = () => {
   return tabId;
 };
 
-export const getActiveAuthTab = () => localStorage.getItem(ACTIVE_AUTH_TAB_KEY) || "";
+export const getActiveAuthOwner = (identifier) => {
+  const normalized = normalizeIdentifier(identifier);
+  const activeUsers = readActiveUsers();
+  return normalized ? activeUsers[normalized] || "" : "";
+};
 
-export const hasAnotherActiveAuthTab = () => {
-  const activeTab = getActiveAuthTab();
+export const hasAnotherActiveAuthTab = (identifier) => {
+  const activeTab = getActiveAuthOwner(identifier);
   const currentTab = getTabId();
 
   return Boolean(activeTab && activeTab !== currentTab);
 };
 
-export const claimAuthTab = () => {
+export const claimAuthTab = (identifier) => {
+  const normalized = normalizeIdentifier(identifier);
+
+  if (!normalized) {
+    return getTabId();
+  }
+
+  const activeUsers = readActiveUsers();
   const currentTab = getTabId();
-  localStorage.setItem(ACTIVE_AUTH_TAB_KEY, currentTab);
+  activeUsers[normalized] = currentTab;
+  writeActiveUsers(activeUsers);
   return currentTab;
 };
 
-export const releaseAuthTab = () => {
-  const currentTab = getTabId();
-  const activeTab = getActiveAuthTab();
+export const releaseAuthTab = (identifier) => {
+  const normalized = normalizeIdentifier(identifier || getStoredUser()?.email);
 
-  if (activeTab === currentTab) {
-    localStorage.removeItem(ACTIVE_AUTH_TAB_KEY);
+  if (!normalized) {
+    return;
+  }
+
+  const activeUsers = readActiveUsers();
+  const currentTab = getTabId();
+
+  if (activeUsers[normalized] === currentTab) {
+    delete activeUsers[normalized];
+    writeActiveUsers(activeUsers);
   }
 };
 
-export const clearStoredAuth = () => {
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
+export const forceClearCurrentTabAuth = () => {
+  releaseAuthTab();
+  clearStoredAuth();
 };

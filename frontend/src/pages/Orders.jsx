@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/NavbarComp";
+import Footer from "../components/Footer";
 import Pagination from "../components/Pagination";
 import { getUserOrders } from "../api/orderApi.jsx";
+import { getStoredToken } from "../utils/authStorage.js";
 
 const formatPrice = (price) => `Rs ${Number(price || 0).toFixed(0)}`;
 
@@ -10,7 +12,7 @@ const Orders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const token = localStorage.getItem("token");
+  const token = getStoredToken();
   const navigate = useNavigate();
 
   const ordersPerPage = 4;
@@ -162,6 +164,7 @@ const Orders = () => {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 };

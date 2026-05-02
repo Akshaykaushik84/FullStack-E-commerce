@@ -1,4 +1,5 @@
-import { apiClient, getAuthHeaders, getStoredToken } from "./apiClient.jsx";
+import { apiClient, getAuthHeaders } from "./apiClient.jsx";
+import { getStoredToken } from "../utils/authStorage.js";
 
 const getAuthConfig = () => ({
   headers: getAuthHeaders(getStoredToken()),
