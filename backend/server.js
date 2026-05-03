@@ -18,6 +18,7 @@ const app = express()
 const PORT = Number(process.env.PORT || 5000)
 const frontendDistPath = path.resolve(__dirname, "../frontend/dist")
 const mongoUrl = process.env.MONGO_URL || process.env.MONGO_URI || process.env.MONGODB_URI
+let mongoConnectionError = ""
 
 const allowedOrigins = (process.env.CORS_ORIGIN || "")
     .split(",")
@@ -46,20 +47,28 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")))
 if (mongoUrl) {
     mongoose.connect(mongoUrl)
         .then(async () => {
+            mongoConnectionError = ""
             await seedHardcodedAdmin()
             console.log("MongoDB Connected")
             console.log("Hardcoded admin ensured: admin@gmail.com / 123456")
         })
-        .catch((err) => console.log("MongoDB connection error:", err.message))
+        .catch((err) => {
+            mongoConnectionError = err.message
+            console.log("MongoDB connection error:", err.message)
+        })
 } else {
-    console.log("MongoDB connection error: MONGO_URL, MONGO_URI, or MONGODB_URI is missing")
+    mongoConnectionError = "MONGO_URL, MONGO_URI, or MONGODB_URI is missing"
+    console.log("MongoDB connection error:", mongoConnectionError)
 }
 
 app.get("/api/health", (req, res) => {
     res.json({
         status: "ok",
         uptime: process.uptime(),
-        database: mongoose.connection.readyState === 1 ? "connected" : "disconnected"
+        database: mongoose.connection.readyState === 1 ? "connected" : "disconnected",
+        mongoEnvPresent: Boolean(mongoUrl),
+        mongoHost: mongoUrl ? mongoUrl.replace(/^mongodb(\+srv)?:\/\/([^@]+@)?/, "mongodb$1://***@").split("/")[2] : "",
+        mongoError: mongoose.connection.readyState === 1 ? "" : mongoConnectionError
     })
 })
 
