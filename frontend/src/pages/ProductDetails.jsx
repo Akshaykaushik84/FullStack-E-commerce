@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Heart, ShoppingCart, Star } from "lucide-react";
 import { useParams } from "react-router-dom";
 import Navbar from "../components/NavbarComp";
@@ -16,7 +16,7 @@ const ProductDetails = () => {
   const [product, setProduct] = useState(null);
   const [wishlisted, setWishlisted] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [reviewForm, setReviewForm] = useState({ rating: 5, comment: "" });
+  const [reviewForm, setReviewForm] = useState({ rating: 5, comment: "", reviewImage: null });
 
   useEffect(() => {
     Promise.all([
@@ -61,20 +61,38 @@ const ProductDetails = () => {
       return;
     }
 
-    createProductReview(id, reviewForm, token)
+    const formData = new FormData();
+    formData.append("rating", String(reviewForm.rating));
+    formData.append("comment", reviewForm.comment);
+
+    if (reviewForm.reviewImage) {
+      formData.append("reviewImage", reviewForm.reviewImage);
+    }
+
+    createProductReview(id, formData, token)
       .then((res) => {
         setProduct(res.data);
-        setReviewForm({ rating: 5, comment: "" });
+        setReviewForm({ rating: 5, comment: "", reviewImage: null });
       })
       .catch((err) => alert(err.response?.data?.message || "Unable to submit review"));
   };
 
   if (loading) {
-    return <div className="min-h-screen bg-slate-100"><Navbar /><div className="pt-28 text-center text-lg text-slate-600">Loading product...</div></div>;
+    return (
+      <div className="min-h-screen bg-slate-100">
+        <Navbar />
+        <div className="pt-28 text-center text-lg text-slate-600">Loading product...</div>
+      </div>
+    );
   }
 
   if (!product) {
-    return <div className="min-h-screen bg-slate-100"><Navbar /><div className="pt-28 text-center text-lg text-slate-600">Product not found.</div></div>;
+    return (
+      <div className="min-h-screen bg-slate-100">
+        <Navbar />
+        <div className="pt-28 text-center text-lg text-slate-600">Product not found.</div>
+      </div>
+    );
   }
 
   return (
@@ -83,13 +101,23 @@ const ProductDetails = () => {
       <div className="mx-auto max-w-7xl px-3 pb-28 pt-24 sm:px-5 sm:pt-28 lg:pb-16">
         <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr] lg:gap-8">
           <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-            <img src={product.image} alt={product.name} className="h-[280px] w-full object-cover sm:h-[420px] lg:h-full" />
+            <img
+              src={product.image}
+              alt={product.name}
+              className="h-[280px] w-full object-cover sm:h-[420px] lg:h-full"
+            />
           </div>
 
           <div className="space-y-5 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
             <div className="flex flex-wrap items-center gap-3">
-              <span className="rounded-full bg-[var(--brand-50)] px-4 py-2 text-sm font-semibold text-[var(--brand-700)]">{product.category}</span>
-              {product.featured ? <span className="rounded-full bg-[var(--ink-900)] px-4 py-2 text-sm font-semibold text-white">Featured</span> : null}
+              <span className="rounded-full bg-[var(--brand-50)] px-4 py-2 text-sm font-semibold text-[var(--brand-700)]">
+                {product.category}
+              </span>
+              {product.featured ? (
+                <span className="rounded-full bg-[var(--ink-900)] px-4 py-2 text-sm font-semibold text-white">
+                  Featured
+                </span>
+              ) : null}
             </div>
             <div>
               <h1 className="text-3xl font-bold text-slate-900 sm:text-4xl">{product.name}</h1>
@@ -109,11 +137,25 @@ const ProductDetails = () => {
                 <p className="mt-1 text-sm text-slate-500">Stock available: {product.countInStock}</p>
               </div>
               <div className="flex flex-col gap-3 sm:flex-row">
-                <button type="button" onClick={handleWishlist} className={`rounded-2xl px-4 py-3 text-sm font-semibold ${wishlisted ? "bg-rose-500 text-white" : "border border-slate-200 text-slate-700"}`}>
-                  <span className="inline-flex items-center gap-2"><Heart size={16} fill={wishlisted ? "currentColor" : "none"} /> {wishlisted ? "Saved" : "Save"}</span>
+                <button
+                  type="button"
+                  onClick={handleWishlist}
+                  className={`rounded-2xl px-4 py-3 text-sm font-semibold ${
+                    wishlisted ? "bg-rose-500 text-white" : "border border-slate-200 text-slate-700"
+                  }`}
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <Heart size={16} fill={wishlisted ? "currentColor" : "none"} /> {wishlisted ? "Saved" : "Save"}
+                  </span>
                 </button>
-                <button type="button" onClick={handleAddToCart} className="rounded-2xl bg-[var(--brand-600)] px-5 py-3 text-sm font-semibold text-white">
-                  <span className="inline-flex items-center gap-2"><ShoppingCart size={16} /> Add to Cart</span>
+                <button
+                  type="button"
+                  onClick={handleAddToCart}
+                  className="rounded-2xl bg-[var(--brand-600)] px-5 py-3 text-sm font-semibold text-white"
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <ShoppingCart size={16} /> Add to Cart
+                  </span>
                 </button>
               </div>
             </div>
@@ -122,14 +164,42 @@ const ProductDetails = () => {
         </div>
 
         <div className="mt-8 grid gap-6 lg:mt-10 lg:grid-cols-[0.95fr_1.05fr] lg:gap-8">
-          <form onSubmit={handleReviewSubmit} className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
+          <form
+            onSubmit={handleReviewSubmit}
+            className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-8"
+          >
             <h2 className="text-2xl font-semibold text-slate-900">Write a review</h2>
             <div className="mt-5 space-y-4">
-              <select value={reviewForm.rating} onChange={(e) => setReviewForm((prev) => ({ ...prev, rating: Number(e.target.value) }))} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]">
-                {[5,4,3,2,1].map((rating) => <option key={rating} value={rating}>{rating} Stars</option>)}
+              <select
+                value={reviewForm.rating}
+                onChange={(e) => setReviewForm((prev) => ({ ...prev, rating: Number(e.target.value) }))}
+                className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]"
+              >
+                {[5, 4, 3, 2, 1].map((rating) => (
+                  <option key={rating} value={rating}>
+                    {rating} Stars
+                  </option>
+                ))}
               </select>
-              <textarea value={reviewForm.comment} onChange={(e) => setReviewForm((prev) => ({ ...prev, comment: e.target.value }))} className="min-h-32 w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" placeholder="Share your experience with this product" required />
-              <button type="submit" className="rounded-2xl bg-[var(--brand-600)] px-5 py-3 text-sm font-semibold text-white">Submit Review</button>
+              <textarea
+                value={reviewForm.comment}
+                onChange={(e) => setReviewForm((prev) => ({ ...prev, comment: e.target.value }))}
+                className="min-h-32 w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]"
+                placeholder="Share your experience with this product"
+                required
+              />
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setReviewForm((prev) => ({ ...prev, reviewImage: e.target.files?.[0] || null }))}
+                className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[var(--brand-500)]"
+              />
+              <button
+                type="submit"
+                className="rounded-2xl bg-[var(--brand-600)] px-5 py-3 text-sm font-semibold text-white"
+              >
+                Submit Review
+              </button>
             </div>
           </form>
 
@@ -142,12 +212,23 @@ const ProductDetails = () => {
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                       <div>
                         <p className="font-semibold text-slate-900">{review.name}</p>
-                        <p className="text-sm text-slate-500">{review.email || review.user?.email || "No email"}</p>
+                        <p className="text-sm text-slate-500">
+                          {review.email || review.user?.email || "No email"}
+                        </p>
                       </div>
                       <p className="text-sm font-medium text-amber-700">{review.rating}/5</p>
                     </div>
                     <p className="mt-2 text-sm text-slate-600">{review.comment}</p>
-                    <p className="mt-2 text-xs text-slate-400">{new Date(review.createdAt).toLocaleDateString()}</p>
+                    {review.image ? (
+                      <img
+                        src={review.image}
+                        alt={`${review.name} review`}
+                        className="mt-3 h-28 w-28 rounded-2xl object-cover"
+                      />
+                    ) : null}
+                    <p className="mt-2 text-xs text-slate-400">
+                      {new Date(review.createdAt).toLocaleDateString()}
+                    </p>
                   </div>
                 ))
               ) : (
