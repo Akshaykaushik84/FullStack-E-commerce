@@ -35,7 +35,7 @@ const heroSlides = [
 
 const initialFilters = {
   page: 1,
-  limit: 8,
+  limit: 12,
   search: "",
   category: "All",
   sort: "latest",
@@ -106,7 +106,7 @@ const Home = () => {
     <div className="min-h-screen bg-[linear-gradient(180deg,var(--surface-50)_0%,#ffffff_45%,#eef7ff_100%)]">
       <Navbar />
 
-      <div className="mx-auto max-w-[1440px] px-3 pb-28 pt-24 sm:px-4 sm:pt-28 lg:px-6 lg:pb-16">
+      <div className="mx-auto max-w-[1480px] px-2 pb-28 pt-20 sm:px-4 sm:pt-28 lg:px-5 lg:pb-16 xl:px-6">
         <section className="relative overflow-hidden rounded-[2rem] border border-white/20 bg-[linear-gradient(135deg,var(--ink-900)_0%,var(--brand-700)_46%,var(--accent-500)_100%)] text-white shadow-2xl sm:rounded-[2.5rem]">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_35%)]" />
           <div className="grid items-center gap-8 px-5 py-7 sm:px-7 sm:py-9 md:grid-cols-[1.05fr_0.95fr] md:px-10 md:py-12 lg:gap-10 lg:px-12 lg:py-14">
@@ -187,16 +187,16 @@ const Home = () => {
           </div>
         </section>
 
-        <section className="mt-8 grid gap-6 lg:mt-10 lg:grid-cols-[280px_1fr] lg:gap-8">
+        <section className="mt-5 grid gap-4 sm:mt-8 lg:mt-10 lg:grid-cols-[260px_1fr] lg:gap-6 xl:grid-cols-[280px_1fr]">
           <Sidebar
             categories={categories}
             selectedCategory={filters.category}
             onCategoryChange={(category) => handleFilterChange("category", category)}
           />
 
-          <div className="space-y-8">
-            <div className="rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-              <div className="grid gap-3 lg:grid-cols-[1fr_220px_220px] lg:gap-4">
+          <div className="space-y-5 sm:space-y-8">
+            <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:rounded-[2rem] sm:p-5">
+              <div className="grid gap-2.5 sm:gap-3 lg:grid-cols-[1fr_210px_190px] xl:grid-cols-[1fr_220px_220px] lg:gap-4">
                 <div className="relative">
                   <Search
                     size={18}
@@ -211,14 +211,14 @@ const Home = () => {
                         handleFilterChange("search", searchInput);
                       }
                     }}
-                    className="w-full rounded-2xl border border-slate-200 py-3 pl-11 pr-4 outline-none focus:border-[var(--brand-500)]"
+                    className="w-full rounded-xl border border-slate-200 py-2.5 pl-11 pr-4 text-sm outline-none focus:border-[var(--brand-500)] sm:rounded-2xl sm:py-3"
                     placeholder="Search by product name, brand, or description"
                   />
                 </div>
                 <select
                   value={filters.sort}
                   onChange={(e) => handleFilterChange("sort", e.target.value)}
-                  className="rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]"
+                  className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-[var(--brand-500)] sm:rounded-2xl sm:py-3"
                 >
                   <option value="latest">Latest arrivals</option>
                   <option value="priceAsc">Price: Low to high</option>
@@ -229,7 +229,7 @@ const Home = () => {
                 <button
                   type="button"
                   onClick={() => handleFilterChange("search", searchInput)}
-                  className="rounded-2xl bg-[var(--brand-600)] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[var(--brand-700)]"
+                  className="rounded-xl bg-[var(--brand-600)] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--brand-700)] sm:rounded-2xl sm:py-3"
                 >
                   Search Products
                 </button>
@@ -242,15 +242,15 @@ const Home = () => {
               </div>
             ) : null}
 
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="flex items-end justify-between gap-3">
               <div>
-                <p className="text-sm uppercase tracking-[0.3em] text-[var(--brand-500)]">Catalog</p>
-                <h2 className="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl">Browse Products</h2>
-                <p className="mt-2 text-sm text-slate-500">Category: {filters.category}</p>
+                <p className="text-xs uppercase tracking-[0.22em] text-[var(--brand-500)] sm:text-sm sm:tracking-[0.3em]">Catalog</p>
+                <h2 className="mt-1 text-xl font-bold text-slate-900 sm:mt-2 sm:text-3xl">Browse Products</h2>
+                <p className="mt-1 text-xs text-slate-500 sm:mt-2 sm:text-sm">Category: {filters.category}</p>
               </div>
-              <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
-                <p className="text-sm text-slate-500">Page status</p>
-                <p className="mt-1 text-lg font-semibold text-slate-900">
+              <div className="shrink-0 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-right shadow-sm sm:rounded-2xl sm:px-5 sm:py-4">
+                <p className="text-xs text-slate-500 sm:text-sm">Page</p>
+                <p className="mt-0.5 text-sm font-semibold text-slate-900 sm:mt-1 sm:text-lg">
                   {pagination.page || 1} / {pagination.totalPages || 1}
                 </p>
               </div>
@@ -262,7 +262,7 @@ const Home = () => {
               </div>
             ) : products.length ? (
               <>
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                   {products.map((product) => (
                     <ProductCard
                       key={product._id}

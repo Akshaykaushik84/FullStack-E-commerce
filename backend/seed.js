@@ -204,7 +204,7 @@ const createCatalog = () => {
 
 const seedData = async () => {
     try {
-        const mongoUrl = process.env.MONGO_URL || "mongodb://localhost:27017/akshayDB"
+        const mongoUrl = process.env.MONGO_URL || process.env.MONGO_URI || process.env.MONGODB_URI || "mongodb://localhost:27017/akshayDB"
         await mongoose.connect(mongoUrl)
         console.log("MongoDB Connected")
 
