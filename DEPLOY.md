@@ -9,7 +9,7 @@ This project is ready for a single-service deploy where the backend serves the b
 3. Select the repository.
 4. Render will read [render.yaml](/C:/Users/kaush/OneDrive/Desktop/ecom/render.yaml).
 5. Add these environment variables:
-   - `MONGO_URL`
+   - `MONGO_URL` or `MONGO_URI`
    - `JWT_SECRET`
    - `CORS_ORIGIN`
 

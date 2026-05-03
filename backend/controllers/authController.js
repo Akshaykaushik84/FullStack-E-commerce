@@ -113,7 +113,7 @@ exports.register = async (req, res) => {
             ...buildAuthResponse(user)
         })
     } catch (err) {
-        res.status(400).json({ error: err.message })
+        res.status(400).json({ message: err.message })
     }
 }
 
@@ -140,7 +140,7 @@ exports.login = async (req, res) => {
             ...buildAuthResponse(user)
         })
     } catch (err) {
-        res.status(500).json({ error: err.message })
+        res.status(500).json({ message: err.message })
     }
 }
 
@@ -155,7 +155,7 @@ exports.logout = async (req, res) => {
 
         res.json({ message: "Logged out successfully" })
     } catch (err) {
-        res.status(500).json({ error: err.message })
+        res.status(500).json({ message: err.message })
     }
 }
 
@@ -203,7 +203,7 @@ exports.forgotPassword = async (req, res) => {
 
         res.json({ message: "Password reset successful. Please login again." })
     } catch (err) {
-        res.status(500).json({ error: err.message })
+        res.status(500).json({ message: err.message })
     }
 }
 
@@ -222,7 +222,7 @@ exports.getProfile = async (req, res) => {
 
         res.json(safeUser)
     } catch (err) {
-        res.status(500).json({ error: err.message })
+        res.status(500).json({ message: err.message })
     }
 }
 
@@ -307,7 +307,7 @@ exports.updateProfile = async (req, res) => {
             user: updatedUser
         })
     } catch (err) {
-        res.status(500).json({ error: err.message })
+        res.status(500).json({ message: err.message })
     }
 }
 
@@ -334,6 +334,6 @@ exports.uploadProfileImage = async (req, res) => {
             user: buildAuthResponse(user).user
         })
     } catch (err) {
-        res.status(500).json({ error: err.message })
+        res.status(500).json({ message: err.message })
     }
 }
