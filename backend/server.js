@@ -20,6 +20,15 @@ const frontendDistPath = path.resolve(__dirname, "../frontend/dist")
 const mongoUrl = process.env.MONGO_URL || process.env.MONGO_URI || process.env.MONGODB_URI
 let mongoConnectionError = ""
 
+const getSafeMongoHost = (url) => {
+    if (!url) return ""
+
+    const withoutScheme = String(url).replace(/^mongodb(\+srv)?:\/\//, "")
+    const hostPart = withoutScheme.split("/")[0] || ""
+
+    return hostPart.includes("@") ? hostPart.split("@").pop() : hostPart
+}
+
 const allowedOrigins = (process.env.CORS_ORIGIN || "")
     .split(",")
     .map((origin) => origin.trim())
@@ -45,7 +54,9 @@ app.use(express.json())
 app.use("/uploads", express.static(path.join(__dirname, "uploads")))
 
 if (mongoUrl) {
-    mongoose.connect(mongoUrl)
+    mongoose.connect(mongoUrl, {
+        serverSelectionTimeoutMS: 8000
+    })
         .then(async () => {
             mongoConnectionError = ""
             await seedHardcodedAdmin()
@@ -67,7 +78,7 @@ app.get("/api/health", (req, res) => {
         uptime: process.uptime(),
         database: mongoose.connection.readyState === 1 ? "connected" : "disconnected",
         mongoEnvPresent: Boolean(mongoUrl),
-        mongoHost: mongoUrl ? mongoUrl.replace(/^mongodb(\+srv)?:\/\/([^@]+@)?/, "mongodb$1://***@").split("/")[2] : "",
+        mongoHost: getSafeMongoHost(mongoUrl),
         mongoError: mongoose.connection.readyState === 1 ? "" : mongoConnectionError
     })
 })
