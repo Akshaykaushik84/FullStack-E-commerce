@@ -2,6 +2,7 @@
 const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
 const path = require("path")
+const JWT_SECRET = process.env.JWT_SECRET || "secretkey"
 
 const DEFAULT_PROFILE_IMAGE = "https://www.pngall.com/wp-content/uploads/5/Profile-Transparent.png"
 
@@ -103,7 +104,7 @@ exports.register = async (req, res) => {
 
         await markSessionActive(user)
 
-        const token = jwt.sign({ id: user._id }, "secretkey", {
+        const token = jwt.sign({ id: user._id }, JWT_SECRET, {
             expiresIn: "1d"
         })
 
@@ -130,7 +131,7 @@ exports.login = async (req, res) => {
         await normalizeProfileFields(user)
         await markSessionActive(user)
 
-        const token = jwt.sign({ id: user._id }, "secretkey", {
+        const token = jwt.sign({ id: user._id }, JWT_SECRET, {
             expiresIn: "1d"
         })
 

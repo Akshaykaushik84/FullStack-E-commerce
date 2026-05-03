@@ -1,5 +1,7 @@
-﻿const jwt = require("jsonwebtoken")
+const jwt = require("jsonwebtoken")
 const User = require("../models/User")
+
+const JWT_SECRET = process.env.JWT_SECRET || "secretkey"
 
 const authMiddleware = async (req, res, next) => {
     const authHeader = req.header("Authorization")
@@ -13,7 +15,7 @@ const authMiddleware = async (req, res, next) => {
         : authHeader
 
     try {
-        const verified = jwt.verify(token, "secretkey")
+        const verified = jwt.verify(token, JWT_SECRET)
         const user = await User.findById(verified.id).select("role name email isSessionActive lastSeenAt")
 
         if (user) {
