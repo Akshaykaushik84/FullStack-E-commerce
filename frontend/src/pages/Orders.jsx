@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/NavbarComp";
 import Footer from "../components/Footer";
 import Pagination from "../components/Pagination";
-import { useToast } from "../components/ToastProvider.jsx";
+import { useToast } from "../hooks/useToast.js";
 import {
   cancelOrder,
   downloadInvoice,
@@ -46,13 +46,13 @@ const Orders = () => {
     [currentPage, orders]
   );
 
-  const refreshOrders = () => {
+  const refreshOrders = useCallback(() => {
     if (!token) {
       return Promise.resolve();
     }
 
     return getUserOrders(token).then((res) => setOrders(res.data || []));
-  };
+  }, [token]);
 
   useEffect(() => {
     if (!token) {
@@ -68,7 +68,7 @@ const Orders = () => {
         }
       })
       .finally(() => setLoading(false));
-  }, [navigate, token]);
+  }, [navigate, refreshOrders, token]);
 
   useEffect(() => {
     if (!token) return undefined;
@@ -87,14 +87,25 @@ const Orders = () => {
       window.clearInterval(intervalId);
       window.removeEventListener("focus", handleFocus);
     };
-  }, [token]);
+  }, [refreshOrders, token]);
 
   const handleReasonChange = (orderId, value) => {
     setReasonDrafts((prev) => ({ ...prev, [orderId]: value }));
   };
 
   const handleCancel = (orderId) => {
-    cancelOrder(orderId, reasonDrafts[orderId] || "", token)
+    const reason = (reasonDrafts[orderId] || "").trim();
+    if (reason.length < 5) {
+      showError("Please enter a cancel reason with at least 5 characters.");
+      return;
+    }
+
+    if (reason.length > 250) {
+      showError("Cancel reason must be 250 characters or less.");
+      return;
+    }
+
+    cancelOrder(orderId, reason, token)
       .then(() => {
         showSuccess("Order cancelled successfully.");
         return refreshOrders();
@@ -103,7 +114,18 @@ const Orders = () => {
   };
 
   const handleReturn = (orderId) => {
-    requestReturn(orderId, reasonDrafts[orderId] || "", token)
+    const reason = (reasonDrafts[orderId] || "").trim();
+    if (reason.length < 5) {
+      showError("Please enter a return reason with at least 5 characters.");
+      return;
+    }
+
+    if (reason.length > 250) {
+      showError("Return reason must be 250 characters or less.");
+      return;
+    }
+
+    requestReturn(orderId, reason, token)
       .then(() => {
         showSuccess("Return request submitted successfully.");
         return refreshOrders();
@@ -221,6 +243,8 @@ const Orders = () => {
                         onChange={(e) => handleReasonChange(order._id, e.target.value)}
                         placeholder="Reason for cancel or return request"
                         className="min-h-24 rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]"
+                        minLength={5}
+                        maxLength={250}
                       />
                       <div className="grid gap-2 sm:flex sm:flex-wrap sm:gap-3">
                         <button

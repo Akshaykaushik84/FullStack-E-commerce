@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronUp, Pencil, PackageOpen, Trash2 } from "lucide-react";
 import Navbar from "../components/NavbarComp";
 import Footer from "../components/Footer";
-import { useToast } from "../components/ToastProvider.jsx";
+import { useToast } from "../hooks/useToast.js";
 import {
   deleteAdminUser,
   exportSalesReport,
@@ -26,6 +26,7 @@ import {
 } from "../api/couponApi.jsx";
 import { downloadInvoice, getUserOrders, updateOrderStatus } from "../api/orderApi.jsx";
 import { getStoredToken, getStoredUser } from "../utils/authStorage.js";
+import { isValidHttpUrl, isValidImageFile, isValidName } from "../utils/formValidation.js";
 
 const emptyProductForm = {
   name: "",
@@ -153,8 +154,12 @@ const AdminDashboard = () => {
   const [showSalesRows, setShowSalesRows] = useState(false);
   const [showOrders, setShowOrders] = useState(false);
   const [productSearch, setProductSearch] = useState("");
-  const [productPreviewUrl, setProductPreviewUrl] = useState("");
   const { showError, showSuccess } = useToast();
+
+  const productPreviewUrl = useMemo(
+    () => (productImageFile ? URL.createObjectURL(productImageFile) : ""),
+    [productImageFile]
+  );
 
   const refreshAdminData = useCallback(() => {
     Promise.allSettled([
@@ -255,16 +260,10 @@ const AdminDashboard = () => {
   }, [productSearch, products]);
 
   useEffect(() => {
-    if (!productImageFile) {
-      setProductPreviewUrl("");
-      return undefined;
-    }
+    if (!productPreviewUrl) return undefined;
 
-    const nextPreviewUrl = URL.createObjectURL(productImageFile);
-    setProductPreviewUrl(nextPreviewUrl);
-
-    return () => URL.revokeObjectURL(nextPreviewUrl);
-  }, [productImageFile]);
+    return () => URL.revokeObjectURL(productPreviewUrl);
+  }, [productPreviewUrl]);
 
   const handleProductChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -273,17 +272,83 @@ const AdminDashboard = () => {
 
   const handleCouponChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setCouponForm((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
+    setCouponForm((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : name === "code" ? value.toUpperCase().replace(/[^A-Z0-9]/g, "") : value,
+    }));
+  };
+
+  const handleProductImageChange = (e) => {
+    const file = e.target.files?.[0] || null;
+
+    if (file && !isValidImageFile(file, 4)) {
+      showError("Please upload a valid product image under 4 MB.");
+      e.target.value = "";
+      setProductImageFile(null);
+      return;
+    }
+
+    setProductImageFile(file);
   };
 
   const handleProductSubmit = (e) => {
     e.preventDefault();
 
+    const price = Number(productForm.price);
+    const stock = Number(productForm.countInStock);
+    const discountPercentage = Number(productForm.discountPercentage || 0);
+    const imageUrl = productForm.image.trim();
+
+    if (!isValidName(productForm.name)) {
+      showError("Product name must be at least 2 characters.");
+      return;
+    }
+
+    if (!Number.isFinite(price) || price <= 0) {
+      showError("Product price must be greater than 0.");
+      return;
+    }
+
+    if (!Number.isInteger(stock) || stock < 0) {
+      showError("Product stock must be a valid whole number.");
+      return;
+    }
+
+    if (!isValidName(productForm.category)) {
+      showError("Product category is required.");
+      return;
+    }
+
+    if (!productImageFile && !imageUrl) {
+      showError("Please upload a product image or enter an image URL.");
+      return;
+    }
+
+    if (imageUrl && !isValidHttpUrl(imageUrl)) {
+      showError("Please enter a valid product image URL.");
+      return;
+    }
+
+    if (!productForm.description.trim() || productForm.description.trim().length < 8) {
+      showError("Product description must be at least 8 characters.");
+      return;
+    }
+
+    if (!Number.isFinite(discountPercentage) || discountPercentage < 0 || discountPercentage > 95) {
+      showError("Discount must be between 0 and 95.");
+      return;
+    }
+
     const payload = {
       ...productForm,
-      price: Number(productForm.price),
-      countInStock: Number(productForm.countInStock),
-      discountPercentage: Number(productForm.discountPercentage || 0),
+      name: productForm.name.trim(),
+      category: productForm.category.trim(),
+      brand: productForm.brand.trim(),
+      image: imageUrl,
+      description: productForm.description.trim(),
+      price,
+      countInStock: stock,
+      discountPercentage,
     };
 
     const requestPayload = new FormData();
@@ -314,10 +379,41 @@ const AdminDashboard = () => {
   const handleCouponSubmit = (e) => {
     e.preventDefault();
 
+    const code = couponForm.code.trim().toUpperCase();
+    const discountValue = Number(couponForm.discountValue);
+    const minimumOrderAmount = Number(couponForm.minimumOrderAmount || 0);
+
+    if (!/^[A-Z0-9]{3,20}$/.test(code)) {
+      showError("Coupon code must be 3-20 letters or numbers.");
+      return;
+    }
+
+    if (!Number.isFinite(discountValue) || discountValue <= 0) {
+      showError("Discount value must be greater than 0.");
+      return;
+    }
+
+    if (couponForm.discountType === "percentage" && discountValue > 95) {
+      showError("Percentage discount must be between 1 and 95.");
+      return;
+    }
+
+    if (!Number.isFinite(minimumOrderAmount) || minimumOrderAmount < 0) {
+      showError("Minimum order amount must be 0 or more.");
+      return;
+    }
+
+    if (couponForm.description.trim().length > 160) {
+      showError("Coupon description must be 160 characters or less.");
+      return;
+    }
+
     const payload = {
       ...couponForm,
-      discountValue: Number(couponForm.discountValue),
-      minimumOrderAmount: Number(couponForm.minimumOrderAmount || 0),
+      code,
+      description: couponForm.description.trim(),
+      discountValue,
+      minimumOrderAmount,
     };
 
     const request = editingCouponId
@@ -484,23 +580,23 @@ const AdminDashboard = () => {
             />
 
             <form className="space-y-4" onSubmit={handleProductSubmit}>
-              <input name="name" value={productForm.name} onChange={handleProductChange} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" placeholder="Product name" required />
+              <input name="name" value={productForm.name} onChange={handleProductChange} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" placeholder="Product name" required minLength={2} maxLength={80} />
               <div className="grid gap-4 md:grid-cols-2">
-                <input type="number" name="price" value={productForm.price} onChange={handleProductChange} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" placeholder="Price" required />
-                <input type="number" name="countInStock" value={productForm.countInStock} onChange={handleProductChange} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" placeholder="Stock" required />
+                <input type="number" name="price" value={productForm.price} onChange={handleProductChange} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" placeholder="Price" required min="0" step="1" />
+                <input type="number" name="countInStock" value={productForm.countInStock} onChange={handleProductChange} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" placeholder="Stock" required min="0" step="1" />
               </div>
               <div className="grid gap-4 md:grid-cols-2">
-                <input name="category" value={productForm.category} onChange={handleProductChange} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" placeholder="Category" />
-                <input name="brand" value={productForm.brand} onChange={handleProductChange} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" placeholder="Brand" />
+                <input name="category" value={productForm.category} onChange={handleProductChange} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" placeholder="Category" maxLength={40} />
+                <input name="brand" value={productForm.brand} onChange={handleProductChange} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" placeholder="Brand" maxLength={40} />
               </div>
               <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                <input name="image" value={productForm.image} onChange={handleProductChange} className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-[var(--brand-500)]" placeholder="Image URL" />
+                <input type="url" name="image" value={productForm.image} onChange={handleProductChange} className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-[var(--brand-500)]" placeholder="Image URL" pattern="https?://.+" title="Enter a valid http or https image URL" />
                 <label className="grid gap-2 text-sm font-medium text-slate-700">
                   Upload product image
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={(e) => setProductImageFile(e.target.files?.[0] || null)}
+                    onChange={handleProductImageChange}
                     className="w-full rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-900 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white"
                   />
                 </label>
@@ -518,10 +614,10 @@ const AdminDashboard = () => {
                 ) : null}
               </div>
               <div className="grid gap-4 md:grid-cols-2">
-                <input type="number" name="discountPercentage" value={productForm.discountPercentage} onChange={handleProductChange} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" placeholder="Discount %" />
-                <input name="tags" value={productForm.tags} onChange={handleProductChange} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" placeholder="Tags comma separated" />
+                <input type="number" name="discountPercentage" value={productForm.discountPercentage} onChange={handleProductChange} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" placeholder="Discount %" min="0" max="95" step="1" />
+                <input name="tags" value={productForm.tags} onChange={handleProductChange} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" placeholder="Tags comma separated" maxLength={120} />
               </div>
-              <textarea name="description" value={productForm.description} onChange={handleProductChange} className="min-h-28 w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" placeholder="Description" required />
+              <textarea name="description" value={productForm.description} onChange={handleProductChange} className="min-h-28 w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" placeholder="Description" required minLength={8} maxLength={500} />
               <label className="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700">
                 <input type="checkbox" name="featured" checked={productForm.featured} onChange={handleProductChange} />
                 Mark as featured product
@@ -703,16 +799,16 @@ const AdminDashboard = () => {
             />
             <form className="space-y-4" onSubmit={handleCouponSubmit}>
               <div className="grid gap-4 md:grid-cols-2">
-                <input name="code" value={couponForm.code} onChange={handleCouponChange} className="w-full rounded-2xl border border-slate-200 px-4 py-3 uppercase outline-none focus:border-[var(--brand-500)]" placeholder="Code" required />
+                <input name="code" value={couponForm.code} onChange={handleCouponChange} className="w-full rounded-2xl border border-slate-200 px-4 py-3 uppercase outline-none focus:border-[var(--brand-500)]" placeholder="Code" required minLength={3} maxLength={20} pattern="[A-Za-z0-9]{3,20}" title="Use 3-20 letters or numbers only" />
                 <select name="discountType" value={couponForm.discountType} onChange={handleCouponChange} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]">
                   <option value="percentage">Percentage</option>
                   <option value="flat">Flat</option>
                 </select>
               </div>
-              <textarea name="description" value={couponForm.description} onChange={handleCouponChange} className="min-h-24 w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" placeholder="Offer description" />
+              <textarea name="description" value={couponForm.description} onChange={handleCouponChange} className="min-h-24 w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" placeholder="Offer description" maxLength={160} />
               <div className="grid gap-4 md:grid-cols-2">
-                <input type="number" name="discountValue" value={couponForm.discountValue} onChange={handleCouponChange} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" placeholder="Discount value" required />
-                <input type="number" name="minimumOrderAmount" value={couponForm.minimumOrderAmount} onChange={handleCouponChange} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" placeholder="Minimum order amount" />
+                <input type="number" name="discountValue" value={couponForm.discountValue} onChange={handleCouponChange} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" placeholder="Discount value" required min="1" max={couponForm.discountType === "percentage" ? "95" : undefined} step="1" />
+                <input type="number" name="minimumOrderAmount" value={couponForm.minimumOrderAmount} onChange={handleCouponChange} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" placeholder="Minimum order amount" min="0" step="1" />
               </div>
               <label className="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700">
                 <input type="checkbox" name="isActive" checked={couponForm.isActive} onChange={handleCouponChange} />

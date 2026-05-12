@@ -30,7 +30,15 @@ const storage = multer.diskStorage({
 
 const upload = multer({
     storage,
-    limits: { fileSize: 2 * 1024 * 1024 }
+    limits: { fileSize: 2 * 1024 * 1024 },
+    fileFilter: (_req, file, cb) => {
+        if (/^image\/(jpeg|png|webp|gif)$/.test(file.mimetype || "")) {
+            cb(null, true)
+            return
+        }
+
+        cb(new Error("Only image files are allowed"))
+    }
 })
 
 router.post("/register", register)

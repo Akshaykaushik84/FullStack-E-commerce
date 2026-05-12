@@ -15,11 +15,23 @@ const parseBoolean = (value, defaultValue = false) => {
     return Boolean(value)
 }
 
+const isValidUrl = (value) => {
+    const rawValue = String(value || "").trim()
+    if (!rawValue) return true
+
+    try {
+        const parsed = new URL(rawValue)
+        return ["http:", "https:"].includes(parsed.protocol)
+    } catch (_err) {
+        return false
+    }
+}
+
 const buildProductPayload = (body = {}) => ({
     name: String(body.name || "").trim(),
     price: Number(body.price || 0),
     description: String(body.description || "").trim(),
-    category: String(body.category || "General").trim() || "General",
+    category: String(body.category || "").trim(),
     brand: String(body.brand || "").trim(),
     image: String(body.image || "").trim(),
     countInStock: Number(body.countInStock || 0),
@@ -38,6 +50,20 @@ const buildProductPayload = (body = {}) => ({
 const getUploadedImageUrl = (req) => (
     req.file ? `${req.protocol}://${req.get("host")}/uploads/${path.basename(req.file.path)}` : ""
 )
+
+const validateProductPayload = (payload) => {
+    if (!payload.name || payload.name.length < 2) return "Product name must be at least 2 characters"
+    if (!payload.category || payload.category.length < 2) return "Product category is required"
+    if (!payload.description || payload.description.length < 8) return "Product description is required"
+    if (!Number.isFinite(payload.price) || payload.price <= 0) return "Product price must be greater than 0"
+    if (!Number.isInteger(payload.countInStock) || payload.countInStock < 0) return "Product stock must be a valid whole number"
+    if (!Number.isFinite(payload.discountPercentage) || payload.discountPercentage < 0 || payload.discountPercentage > 95) {
+        return "Discount must be between 0 and 95"
+    }
+    if (!payload.image) return "Product image is required"
+    if (!isValidUrl(payload.image)) return "Product image URL must be valid"
+    return ""
+}
 
 const recalculateRatings = (product) => {
     if (!product.reviews.length) {
@@ -59,6 +85,11 @@ exports.createProduct = async (req, res) => {
 
         if (uploadedImage) {
             payload.image = uploadedImage
+        }
+
+        const validationError = validateProductPayload(payload)
+        if (validationError) {
+            return res.status(400).json({ message: validationError })
         }
 
         const product = await Product.create(payload)
@@ -164,9 +195,15 @@ exports.createProductReview = async (req, res) => {
             return res.status(400).json({ message: "You have already reviewed this product" })
         }
 
+        const fallbackReviewImage = String(req.body.image || "").trim()
+
+        if (!isValidUrl(fallbackReviewImage)) {
+            return res.status(400).json({ message: "Review image URL must be valid" })
+        }
+
         const reviewImage = req.file
             ? `${req.protocol}://${req.get("host")}/uploads/${path.basename(req.file.path)}`
-            : String(req.body.image || "").trim()
+            : fallbackReviewImage
 
         const review = {
             user: req.user.id,
@@ -177,8 +214,16 @@ exports.createProductReview = async (req, res) => {
             image: reviewImage
         }
 
-        if (!review.comment || !review.rating) {
+        if (!Number.isInteger(review.rating) || review.rating < 1 || review.rating > 5) {
+            return res.status(400).json({ message: "Rating must be between 1 and 5" })
+        }
+
+        if (!review.comment || review.comment.length < 5) {
             return res.status(400).json({ message: "Rating and comment are required" })
+        }
+
+        if (review.comment.length > 400) {
+            return res.status(400).json({ message: "Review must be 400 characters or less" })
         }
 
         product.reviews.unshift(review)
@@ -199,6 +244,11 @@ exports.updateProduct = async (req, res) => {
 
         if (uploadedImage) {
             payload.image = uploadedImage
+        }
+
+        const validationError = validateProductPayload(payload)
+        if (validationError) {
+            return res.status(400).json({ message: validationError })
         }
 
         const product = await Product.findByIdAndUpdate(

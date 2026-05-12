@@ -42,6 +42,22 @@ const normalizeDateValue = (value) => {
 
 const normalizeTextValue = (value) => String(value || "").trim().toLowerCase()
 
+const isValidEmail = (value) =>
+    /^(?!.*\.\.)[A-Za-z0-9._%+-]+@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,}$/.test(String(value || "").trim())
+const isStrongEnoughPassword = (value) => String(value || "").length >= 6
+const isValidPhone = (value) => !String(value || "").trim() || /^[6-9]\d{9}$/.test(String(value).trim())
+const isValidUrl = (value) => {
+    const rawValue = String(value || "").trim()
+    if (!rawValue) return true
+
+    try {
+        const parsed = new URL(rawValue)
+        return ["http:", "https:"].includes(parsed.protocol)
+    } catch (_err) {
+        return false
+    }
+}
+
 const normalizeProfileFields = async (user) => {
     let hasChanges = false
 
@@ -88,6 +104,20 @@ exports.register = async (req, res) => {
         const { name, email, password } = req.body
         const normalizedEmail = normalizeTextValue(email)
 
+        const trimmedName = String(name || "").trim()
+
+        if (trimmedName.length < 2) {
+            return res.status(400).json({ message: "Name must be at least 2 characters" })
+        }
+
+        if (!isValidEmail(normalizedEmail)) {
+            return res.status(400).json({ message: "Please enter a valid email address" })
+        }
+
+        if (!isStrongEnoughPassword(password)) {
+            return res.status(400).json({ message: "Password must be at least 6 characters" })
+        }
+
         const existingUser = await User.findOne({ email: normalizedEmail })
         if (existingUser) {
             return res.status(400).json({ message: "Email already registered" })
@@ -96,7 +126,7 @@ exports.register = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10)
 
         const user = await User.create({
-            name,
+            name: trimmedName,
             email: normalizedEmail,
             password: hashedPassword,
             ...profileDefaults
@@ -121,6 +151,14 @@ exports.login = async (req, res) => {
     try {
         const { email, password } = req.body
         const normalizedEmail = normalizeTextValue(email)
+
+        if (!isValidEmail(normalizedEmail)) {
+            return res.status(400).json({ message: "Please enter a valid email address" })
+        }
+
+        if (!password) {
+            return res.status(400).json({ message: "Password is required" })
+        }
 
         const user = await User.findOne({ email: normalizedEmail })
         if (!user) return res.status(400).json({ message: "User not found" })
@@ -172,6 +210,14 @@ exports.forgotPassword = async (req, res) => {
         const normalizedName = normalizeTextValue(name)
         const normalizedEmail = normalizeTextValue(email)
         const normalizedDob = normalizeDateValue(dob)
+
+        if (!isValidEmail(normalizedEmail)) {
+            return res.status(400).json({ message: "Please enter a valid email address" })
+        }
+
+        if (!isStrongEnoughPassword(newPassword)) {
+            return res.status(400).json({ message: "New password must be at least 6 characters" })
+        }
 
         const user = await User.findOne({
             email: { $regex: `^${normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, $options: "i" }
@@ -247,13 +293,29 @@ exports.updateProfile = async (req, res) => {
 
         const updates = {}
 
-        if (typeof name === "string") updates.name = name
-        if (typeof dob === "string") updates.dob = dob
-        if (typeof phone === "string") updates.phone = phone
-        if (typeof profileImage === "string") updates.profileImage = profileImage
-        if (typeof address === "string") updates.address = address
+        if (typeof name === "string") {
+            const trimmedName = name.trim()
+            if (trimmedName.length < 2) {
+                return res.status(400).json({ message: "Name must be at least 2 characters" })
+            }
+            updates.name = trimmedName
+        }
+        if (typeof dob === "string") updates.dob = normalizeDateValue(dob)
+        if (typeof phone === "string") {
+            if (!isValidPhone(phone)) {
+                return res.status(400).json({ message: "Please enter a valid 10 digit Indian phone number" })
+            }
+            updates.phone = phone.trim()
+        }
+        if (typeof profileImage === "string") {
+            if (!isValidUrl(profileImage)) {
+                return res.status(400).json({ message: "Please enter a valid profile image URL" })
+            }
+            updates.profileImage = profileImage.trim() || DEFAULT_PROFILE_IMAGE
+        }
+        if (typeof address === "string") updates.address = address.trim()
         if (typeof permanentAddress === "string") {
-            updates.permanentAddress = permanentAddress
+            updates.permanentAddress = permanentAddress.trim()
         }
 
         const normalizedNewEmail = normalizeTextValue(newEmail)
@@ -280,6 +342,10 @@ exports.updateProfile = async (req, res) => {
             normalizedNewEmail &&
             normalizedNewEmail !== user.email
         ) {
+            if (!isValidEmail(normalizedNewEmail)) {
+                return res.status(400).json({ message: "Please enter a valid email address" })
+            }
+
             const existingUser = await User.findOne({
                 email: normalizedNewEmail,
                 _id: { $ne: req.user.id }
@@ -293,6 +359,9 @@ exports.updateProfile = async (req, res) => {
         }
 
         if (typeof newPassword === "string" && newPassword) {
+            if (!isStrongEnoughPassword(newPassword)) {
+                return res.status(400).json({ message: "Password must be at least 6 characters" })
+            }
             updates.password = await bcrypt.hash(newPassword, 10)
         }
 

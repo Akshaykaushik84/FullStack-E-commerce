@@ -1,7 +1,7 @@
 ﻿import { Heart, ShoppingBag, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import { addToCart } from "../api/cartApi.jsx";
-import { useToast } from "./ToastProvider.jsx";
+import { useToast } from "../hooks/useToast.js";
 import { toggleWishlist } from "../api/wishlistApi.jsx";
 import { getStoredToken } from "../utils/authStorage.js";
 

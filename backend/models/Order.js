@@ -8,17 +8,17 @@ const orderSchema = new mongoose.Schema(
                 product: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
                 quantity: { type: Number, default: 1, min: 1 },
                 unitPrice: { type: Number, required: true, min: 0 },
-                name: { type: String, required: true },
+                name: { type: String, required: true, trim: true },
                 image: { type: String, default: "" }
             }
         ],
         shippingAddress: {
-            fullName: { type: String, required: true },
-            phone: { type: String, required: true },
-            addressLine: { type: String, required: true },
-            city: { type: String, required: true },
-            state: { type: String, required: true },
-            postalCode: { type: String, required: true },
+            fullName: { type: String, required: true, trim: true, minlength: 2, maxlength: 60 },
+            phone: { type: String, required: true, trim: true, match: [/^[6-9]\d{9}$/, "Please enter a valid phone number"] },
+            addressLine: { type: String, required: true, trim: true, minlength: 8, maxlength: 240 },
+            city: { type: String, required: true, trim: true, minlength: 2, maxlength: 50 },
+            state: { type: String, required: true, trim: true, minlength: 2, maxlength: 50 },
+            postalCode: { type: String, required: true, trim: true, match: [/^\d{6}$/, "Please enter a valid postal code"] },
             country: { type: String, default: "India" }
         },
         paymentMethod: {
@@ -67,11 +67,15 @@ const orderSchema = new mongoose.Schema(
         },
         cancelReason: {
             type: String,
-            default: ""
+            default: "",
+            trim: true,
+            maxlength: 250
         },
         returnReason: {
             type: String,
-            default: ""
+            default: "",
+            trim: true,
+            maxlength: 250
         }
     },
     { timestamps: true }

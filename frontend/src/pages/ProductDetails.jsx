@@ -3,11 +3,12 @@ import { Heart, ShoppingCart, Star } from "lucide-react";
 import { useParams } from "react-router-dom";
 import Navbar from "../components/NavbarComp";
 import Footer from "../components/Footer";
-import { useToast } from "../components/ToastProvider.jsx";
+import { useToast } from "../hooks/useToast.js";
 import { addToCart } from "../api/cartApi.jsx";
 import { createProductReview, getSingleProduct } from "../api/productApi.jsx";
 import { getWishlist, toggleWishlist } from "../api/wishlistApi.jsx";
 import { getStoredToken } from "../utils/authStorage.js";
+import { isValidImageFile } from "../utils/formValidation.js";
 
 const formatPrice = (price) => `Rs ${Number(price || 0).toFixed(0)}`;
 
@@ -64,9 +65,15 @@ const ProductDetails = () => {
       return;
     }
 
+    const trimmedComment = reviewForm.comment.trim();
+    if (trimmedComment.length < 5) {
+      showError("Review comment must be at least 5 characters.");
+      return;
+    }
+
     const formData = new FormData();
     formData.append("rating", String(reviewForm.rating));
-    formData.append("comment", reviewForm.comment);
+    formData.append("comment", trimmedComment);
 
     if (reviewForm.reviewImage) {
       formData.append("reviewImage", reviewForm.reviewImage);
@@ -79,6 +86,19 @@ const ProductDetails = () => {
         showSuccess("Review submitted successfully.");
       })
       .catch((err) => showError(err.response?.data?.message || "Unable to submit review"));
+  };
+
+  const handleReviewImageChange = (e) => {
+    const file = e.target.files?.[0] || null;
+
+    if (file && !isValidImageFile(file, 2)) {
+      showError("Please upload a valid review image under 2 MB.");
+      e.target.value = "";
+      setReviewForm((prev) => ({ ...prev, reviewImage: null }));
+      return;
+    }
+
+    setReviewForm((prev) => ({ ...prev, reviewImage: file }));
   };
 
   if (loading) {
@@ -178,6 +198,7 @@ const ProductDetails = () => {
                 value={reviewForm.rating}
                 onChange={(e) => setReviewForm((prev) => ({ ...prev, rating: Number(e.target.value) }))}
                 className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]"
+                required
               >
                 {[5, 4, 3, 2, 1].map((rating) => (
                   <option key={rating} value={rating}>
@@ -191,11 +212,13 @@ const ProductDetails = () => {
                 className="min-h-32 w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]"
                 placeholder="Share your experience with this product"
                 required
+                minLength={5}
+                maxLength={400}
               />
               <input
                 type="file"
                 accept="image/*"
-                onChange={(e) => setReviewForm((prev) => ({ ...prev, reviewImage: e.target.files?.[0] || null }))}
+                onChange={handleReviewImageChange}
                 className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[var(--brand-500)]"
               />
               <button

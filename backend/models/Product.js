@@ -15,7 +15,8 @@ const reviewSchema = new mongoose.Schema(
             type: String,
             required: true,
             trim: true,
-            lowercase: true
+            lowercase: true,
+            match: [/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/, "Please enter a valid email address"]
         },
         rating: {
             type: Number,
@@ -26,7 +27,9 @@ const reviewSchema = new mongoose.Schema(
         comment: {
             type: String,
             required: true,
-            trim: true
+            trim: true,
+            minlength: 5,
+            maxlength: 400
         },
         image: {
             type: String,
@@ -41,7 +44,9 @@ const productSchema = new mongoose.Schema(
         name: {
             type: String,
             required: true,
-            trim: true
+            trim: true,
+            minlength: 2,
+            maxlength: 80
         },
         price: {
             type: Number,
@@ -51,7 +56,9 @@ const productSchema = new mongoose.Schema(
         description: {
             type: String,
             required: true,
-            trim: true
+            trim: true,
+            minlength: 8,
+            maxlength: 500
         },
         category: {
             type: String,

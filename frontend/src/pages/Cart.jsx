@@ -4,11 +4,12 @@ import { CreditCard, MapPin, PackageCheck, ShieldCheck, TicketPercent } from "lu
 import Navbar from "../components/NavbarComp";
 import Footer from "../components/Footer";
 import CartItem from "../components/CartItem";
-import { useToast } from "../components/ToastProvider.jsx";
+import { useToast } from "../hooks/useToast.js";
 import { getCart, removeFromCart, updateCartQuantity } from "../api/cartApi.jsx";
 import { placeOrder } from "../api/orderApi.jsx";
 import { validateCoupon } from "../api/couponApi.jsx";
 import { getStoredToken } from "../utils/authStorage.js";
+import { isValidIndianPhone, isValidName, isValidPostalCode } from "../utils/formValidation.js";
 
 const initialCheckoutForm = {
   fullName: "",
@@ -92,7 +93,15 @@ const Cart = () => {
 
   const handleApplyCoupon = () => {
     setCouponMessage("");
-    validateCoupon(couponCode, cart.subtotal)
+    const normalizedCouponCode = couponCode.trim().toUpperCase();
+
+    if (!/^[A-Z0-9]{3,20}$/.test(normalizedCouponCode)) {
+      setCouponMessage("Enter a valid coupon code.");
+      showError("Coupon code must be 3-20 letters or numbers.");
+      return;
+    }
+
+    validateCoupon(normalizedCouponCode, cart.subtotal)
       .then((res) => {
         setCouponData(res.data);
         setCouponMessage(`${res.data.code} applied successfully.`);
@@ -107,6 +116,32 @@ const Cart = () => {
 
   const handlePlaceOrder = (e) => {
     e.preventDefault();
+
+    if (!isValidName(checkoutForm.fullName)) {
+      showError("Please enter a valid full name.");
+      return;
+    }
+
+    if (!isValidIndianPhone(checkoutForm.phone)) {
+      showError("Please enter a valid 10 digit Indian phone number.");
+      return;
+    }
+
+    if (!isValidName(checkoutForm.city) || !isValidName(checkoutForm.state)) {
+      showError("Please enter a valid city and state.");
+      return;
+    }
+
+    if (!isValidPostalCode(checkoutForm.postalCode)) {
+      showError("Please enter a valid 6 digit postal code.");
+      return;
+    }
+
+    if (checkoutForm.addressLine.trim().length < 8) {
+      showError("Please enter a complete delivery address.");
+      return;
+    }
+
     setSubmitting(true);
 
     placeOrder(
@@ -187,7 +222,7 @@ const Cart = () => {
                 <div className="mt-5 space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                   <p className="inline-flex items-center gap-2 text-sm font-semibold text-slate-900"><TicketPercent size={16} /> Have a coupon?</p>
                   <div className="flex flex-col gap-3 sm:flex-row">
-                    <input value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} placeholder="Enter coupon code" className="flex-1 rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" />
+                    <input value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))} placeholder="Enter coupon code" className="flex-1 rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" minLength={3} maxLength={20} pattern="[A-Z0-9]{3,20}" title="Use 3-20 letters or numbers only" />
                     <button type="button" onClick={handleApplyCoupon} className="rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">Apply</button>
                   </div>
                   <p className={`text-sm ${couponData ? "text-emerald-700" : "text-slate-500"}`}>{couponMessage || "Try WELCOME10 or SAVE150"}</p>
@@ -197,23 +232,23 @@ const Cart = () => {
               <form onSubmit={handlePlaceOrder} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
                 <h2 className="inline-flex items-center gap-2 text-xl font-semibold text-slate-900 sm:text-2xl"><MapPin size={20} /> Checkout details</h2>
                 <div className="mt-5 grid gap-4 md:grid-cols-2">
-                  <input name="fullName" value={checkoutForm.fullName} onChange={handleCheckoutChange} placeholder="Full name" className="rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" required />
-                  <input name="phone" value={checkoutForm.phone} onChange={handleCheckoutChange} placeholder="Phone" className="rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" required />
-                  <input name="city" value={checkoutForm.city} onChange={handleCheckoutChange} placeholder="City" className="rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" required />
-                  <input name="state" value={checkoutForm.state} onChange={handleCheckoutChange} placeholder="State" className="rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" required />
-                  <input name="postalCode" value={checkoutForm.postalCode} onChange={handleCheckoutChange} placeholder="Postal code" className="rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" required />
+                  <input name="fullName" value={checkoutForm.fullName} onChange={handleCheckoutChange} placeholder="Full name" className="rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" required minLength={2} maxLength={60} autoComplete="name" />
+                  <input type="tel" name="phone" value={checkoutForm.phone} onChange={handleCheckoutChange} placeholder="10 digit phone" className="rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" required inputMode="numeric" pattern="[6-9][0-9]{9}" title="Enter a valid 10 digit Indian phone number" />
+                  <input name="city" value={checkoutForm.city} onChange={handleCheckoutChange} placeholder="City" className="rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" required minLength={2} maxLength={50} />
+                  <input name="state" value={checkoutForm.state} onChange={handleCheckoutChange} placeholder="State" className="rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" required minLength={2} maxLength={50} />
+                  <input name="postalCode" value={checkoutForm.postalCode} onChange={handleCheckoutChange} placeholder="6 digit postal code" className="rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" required inputMode="numeric" pattern="[0-9]{6}" title="Enter a valid 6 digit postal code" />
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                     <label className="block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
                       Payment Method
                     </label>
-                    <select name="paymentMethod" value={checkoutForm.paymentMethod} onChange={handleCheckoutChange} className="mt-2 w-full bg-transparent text-sm font-semibold text-slate-900 outline-none">
+                    <select name="paymentMethod" value={checkoutForm.paymentMethod} onChange={handleCheckoutChange} className="mt-2 w-full bg-transparent text-sm font-semibold text-slate-900 outline-none" required>
                       {paymentOptions.map((option) => (
                         <option key={option.value} value={option.value}>{option.label}</option>
                       ))}
                     </select>
                     <p className="mt-2 min-h-5 text-xs text-slate-500">{selectedPaymentOption.helper}</p>
                   </div>
-                  <textarea name="addressLine" value={checkoutForm.addressLine} onChange={handleCheckoutChange} placeholder="Full address" className="min-h-28 rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)] md:col-span-2" required />
+                  <textarea name="addressLine" value={checkoutForm.addressLine} onChange={handleCheckoutChange} placeholder="Full address" className="min-h-28 rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)] md:col-span-2" required minLength={8} maxLength={240} autoComplete="street-address" />
                 </div>
                 <button type="submit" disabled={submitting} className="mt-5 w-full rounded-2xl bg-[var(--brand-600)] px-5 py-3.5 text-sm font-semibold text-white shadow-lg shadow-blue-100 transition hover:bg-[var(--brand-700)] disabled:opacity-60">
                   {submitting ? "Placing order..." : "Place order"}

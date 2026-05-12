@@ -25,6 +25,66 @@ const formatCurrency = (value) => `Rs ${Number(value || 0).toFixed(2)}`
 
 const canUserCancel = (order) => ["Pending", "Approved"].includes(order.status)
 const canUserReturn = (order) => order.status === "Delivered"
+const validateOrderReason = (reason, actionLabel) => {
+    const trimmedReason = String(reason || "").trim()
+
+    if (trimmedReason.length < 5) {
+        return {
+            error: `Please enter a valid ${actionLabel} reason with at least 5 characters`,
+            value: trimmedReason
+        }
+    }
+
+    if (trimmedReason.length > 250) {
+        return {
+            error: `${actionLabel} reason must be 250 characters or less`,
+            value: trimmedReason
+        }
+    }
+
+    return { error: "", value: trimmedReason }
+}
+
+const validateShippingAddress = (shippingAddress = {}) => {
+    const requiredFields = ["fullName", "phone", "addressLine", "city", "state", "postalCode"]
+    const missingField = requiredFields.find((field) => !String(shippingAddress[field] || "").trim())
+
+    if (missingField) {
+        return "Please fill all delivery details"
+    }
+
+    if (!/^[6-9]\d{9}$/.test(String(shippingAddress.phone).trim())) {
+        return "Please enter a valid 10 digit Indian phone number"
+    }
+
+    if (
+        String(shippingAddress.fullName).trim().length < 2 ||
+        String(shippingAddress.city).trim().length < 2 ||
+        String(shippingAddress.state).trim().length < 2
+    ) {
+        return "Please enter valid delivery name, city, and state"
+    }
+
+    if (!/^\d{6}$/.test(String(shippingAddress.postalCode).trim())) {
+        return "Please enter a valid 6 digit postal code"
+    }
+
+    if (String(shippingAddress.addressLine).trim().length < 8) {
+        return "Please enter a complete delivery address"
+    }
+
+    return ""
+}
+
+const normalizeShippingAddress = (shippingAddress = {}) => ({
+    fullName: String(shippingAddress.fullName || "").trim(),
+    phone: String(shippingAddress.phone || "").trim(),
+    addressLine: String(shippingAddress.addressLine || "").trim(),
+    city: String(shippingAddress.city || "").trim(),
+    state: String(shippingAddress.state || "").trim(),
+    postalCode: String(shippingAddress.postalCode || "").trim(),
+    country: String(shippingAddress.country || "India").trim() || "India"
+})
 
 const restockOrderItems = async (order) => {
     const updates = (order.products || []).map(async (item) => {
@@ -48,7 +108,19 @@ const restockOrderItems = async (order) => {
 const placeOrder = async (req, res) => {
     try {
         const { shippingAddress, paymentMethod, couponCode } = req.body
+        const allowedPaymentMethods = ["Cash on Delivery", "UPI", "Debit/Credit Card", "Net Banking", "Wallet"]
+
+        if (!allowedPaymentMethods.includes(paymentMethod)) {
+            return res.status(400).json({ message: "Please select a valid payment method" })
+        }
+
         const userId = req.user.id
+        const normalizedShippingAddress = normalizeShippingAddress(shippingAddress)
+        const shippingError = validateShippingAddress(normalizedShippingAddress)
+
+        if (shippingError) {
+            return res.status(400).json({ message: shippingError })
+        }
 
         const cart = await Cart.findOne({ user: userId }).populate("products.product")
 
@@ -118,7 +190,7 @@ const placeOrder = async (req, res) => {
         const order = await Order.create({
             user: userId,
             products: normalizedProducts,
-            shippingAddress,
+            shippingAddress: normalizedShippingAddress,
             paymentMethod,
             paymentStatus,
             couponCode: normalizedCouponCode,
@@ -245,10 +317,15 @@ const cancelOrder = async (req, res) => {
             return res.status(400).json({ message: "This order can no longer be cancelled" })
         }
 
+        const reasonValidation = validateOrderReason(req.body.reason, "cancel")
+        if (reasonValidation.error) {
+            return res.status(400).json({ message: reasonValidation.error })
+        }
+
         order.status = "Cancelled"
         order.statusManuallyUpdated = true
         order.statusUpdatedAt = new Date()
-        order.cancelReason = String(req.body.reason || "").trim()
+        order.cancelReason = reasonValidation.value
         await restockOrderItems(order)
         await order.save()
 
@@ -276,10 +353,15 @@ const requestReturn = async (req, res) => {
             return res.status(400).json({ message: "Return is available only for delivered orders" })
         }
 
+        const reasonValidation = validateOrderReason(req.body.reason, "return")
+        if (reasonValidation.error) {
+            return res.status(400).json({ message: reasonValidation.error })
+        }
+
         order.status = "Return Requested"
         order.statusManuallyUpdated = true
         order.statusUpdatedAt = new Date()
-        order.returnReason = String(req.body.reason || "").trim()
+        order.returnReason = reasonValidation.value
         await order.save()
 
         res.json({ message: "Return request submitted successfully", order })

@@ -1,6 +1,15 @@
 const Coupon = require("../models/Coupon")
 
 const normalizeCouponCode = (code) => String(code || "").trim().toUpperCase()
+const parseBoolean = (value, defaultValue = true) => {
+    if (typeof value === "boolean") return value
+    if (typeof value === "string") {
+        if (value.toLowerCase() === "true") return true
+        if (value.toLowerCase() === "false") return false
+    }
+    if (value === undefined || value === null) return defaultValue
+    return Boolean(value)
+}
 
 const computeCouponDiscount = (coupon, subtotal) => {
     if (!coupon) {
@@ -24,8 +33,32 @@ const buildCouponPayload = (body = {}) => ({
     discountType: body.discountType === "flat" ? "flat" : "percentage",
     discountValue: Number(body.discountValue || 0),
     minimumOrderAmount: Number(body.minimumOrderAmount || 0),
-    isActive: body.isActive !== false
+    isActive: parseBoolean(body.isActive, true)
 })
+
+const validateCouponPayload = (payload) => {
+    if (!/^[A-Z0-9]{3,20}$/.test(payload.code)) {
+        return "Coupon code must be 3-20 letters or numbers"
+    }
+
+    if (!Number.isFinite(payload.discountValue) || payload.discountValue <= 0) {
+        return "Discount value must be greater than 0"
+    }
+
+    if (payload.discountType === "percentage" && payload.discountValue > 95) {
+        return "Percentage discount must be between 1 and 95"
+    }
+
+    if (!Number.isFinite(payload.minimumOrderAmount) || payload.minimumOrderAmount < 0) {
+        return "Minimum order amount must be 0 or more"
+    }
+
+    if (payload.description && payload.description.length > 160) {
+        return "Coupon description must be 160 characters or less"
+    }
+
+    return ""
+}
 
 const validateCoupon = async (req, res) => {
     try {
@@ -76,8 +109,9 @@ const createCoupon = async (req, res) => {
     try {
         const payload = buildCouponPayload(req.body)
 
-        if (!payload.code) {
-            return res.status(400).json({ message: "Coupon code is required" })
+        const validationError = validateCouponPayload(payload)
+        if (validationError) {
+            return res.status(400).json({ message: validationError })
         }
 
         const existingCoupon = await Coupon.findOne({ code: payload.code })
@@ -96,6 +130,12 @@ const createCoupon = async (req, res) => {
 const updateCoupon = async (req, res) => {
     try {
         const payload = buildCouponPayload(req.body)
+        const validationError = validateCouponPayload(payload)
+
+        if (validationError) {
+            return res.status(400).json({ message: validationError })
+        }
+
         const existing = await Coupon.findOne({ code: payload.code, _id: { $ne: req.params.id } })
 
         if (existing) {

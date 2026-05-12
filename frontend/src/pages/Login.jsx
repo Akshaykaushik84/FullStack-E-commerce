@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { forgotPassword, loginUser } from "../api/authApi.jsx";
-import { useToast } from "../components/ToastProvider.jsx";
+import { useToast } from "../hooks/useToast.js";
 import { claimAuthTab, hasAnotherActiveAuthTab } from "../utils/authSession";
 import { setStoredToken, setStoredUser } from "../utils/authStorage.js";
+import { EMAIL_PATTERN, isStrongPassword, isValidEmail, isValidName } from "../utils/formValidation.js";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -24,17 +25,30 @@ const Login = () => {
   const location = useLocation();
   const { showError, showSuccess } = useToast();
 
-  const handleLogin = () => {
+  const handleLogin = (e) => {
+    e.preventDefault();
     setLoginNotice("");
 
-    if (hasAnotherActiveAuthTab(email)) {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!isValidEmail(normalizedEmail)) {
+      showError("Please enter a valid email address.");
+      return;
+    }
+
+    if (!password) {
+      showError("Password is required.");
+      return;
+    }
+
+    if (hasAnotherActiveAuthTab(normalizedEmail)) {
       setLoginNotice("This account is already active in another tab. Please use that tab or close it first.");
       return;
     }
 
-    loginUser({ email, password })
+    loginUser({ email: normalizedEmail, password })
       .then((res) => {
-        claimAuthTab(res.data.user?.email || email);
+        claimAuthTab(res.data.user?.email || normalizedEmail);
         setStoredToken(res.data.token);
         setStoredUser(res.data.user);
         showSuccess("Login successful.");
@@ -50,28 +64,41 @@ const Login = () => {
     setForgotForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleForgotPassword = () => {
+  const handleForgotPassword = (e) => {
+    e.preventDefault();
     setForgotError("");
     setForgotSuccess("");
+
+    const normalizedForgotEmail = forgotForm.email.trim().toLowerCase();
+
+    if (!isValidName(forgotForm.name)) {
+      setForgotError("Password reset failed: please enter your full name.");
+      return;
+    }
+
+    if (!isValidEmail(normalizedForgotEmail)) {
+      setForgotError("Password reset failed: please enter a valid registered email address.");
+      return;
+    }
 
     if (forgotForm.newPassword !== forgotForm.confirmPassword) {
       setForgotError("Password reset failed: new password and confirm password must match.");
       return;
     }
 
-    if (
-      !forgotForm.name ||
-      !forgotForm.email ||
-      !forgotForm.dob ||
-      !forgotForm.newPassword
-    ) {
+    if (!forgotForm.dob || !forgotForm.newPassword) {
       setForgotError("Password reset failed: please fill in your name, registered email, date of birth, and new password.");
       return;
     }
 
+    if (!isStrongPassword(forgotForm.newPassword)) {
+      setForgotError("Password reset failed: password must be at least 6 characters.");
+      return;
+    }
+
     forgotPassword({
-      name: forgotForm.name,
-      email: forgotForm.email,
+      name: forgotForm.name.trim(),
+      email: normalizedForgotEmail,
       dob: forgotForm.dob,
       newPassword: forgotForm.newPassword,
     })
@@ -98,7 +125,7 @@ const Login = () => {
   return (
     <div className="min-h-screen bg-[linear-gradient(135deg,var(--brand-50)_0%,#ffffff_45%,#e6fffb_100%)] px-3 py-4 sm:px-4 sm:py-12">
       <div className="mx-auto grid max-w-5xl gap-4 items-stretch lg:grid-cols-[1fr_1.05fr] lg:gap-8">
-        <div className="order-2 rounded-[2rem] bg-[var(--ink-900)] p-5 text-white shadow-2xl sm:p-8 md:p-10 lg:order-1">
+        <div className="order-2 animate-fadeIn rounded-[2rem] bg-[var(--ink-900)] p-5 text-white shadow-2xl sm:p-8 md:p-10 lg:order-1">
           <p className="text-sm uppercase tracking-[0.35em] text-teal-300 mb-4">
             Welcome Back
           </p>
@@ -141,7 +168,7 @@ const Login = () => {
                 </div>
               ) : null}
 
-              <div className="space-y-5">
+              <form className="space-y-5" onSubmit={handleLogin}>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
                     Email
@@ -149,9 +176,13 @@ const Login = () => {
                   <input
                     type="email"
                     placeholder="Enter your email"
-                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]"
+                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-[var(--brand-500)] focus:ring-4 focus:ring-blue-100"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    required
+                    pattern={EMAIL_PATTERN}
+                    title="Enter a valid email address, for example name@example.com"
+                    autoComplete="email"
                   />
                 </div>
 
@@ -162,19 +193,22 @@ const Login = () => {
                   <input
                     type="password"
                     placeholder="Enter your password"
-                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]"
+                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-[var(--brand-500)] focus:ring-4 focus:ring-blue-100"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={6}
+                    autoComplete="current-password"
                   />
                 </div>
 
                 <button
-                  className="w-full rounded-2xl bg-[var(--brand-600)] text-white py-3 font-semibold hover:bg-[var(--brand-700)] transition"
-                  onClick={handleLogin}
+                  type="submit"
+                  className="w-full rounded-2xl bg-[var(--brand-600)] text-white py-3 font-semibold shadow-lg shadow-blue-100 transition hover:-translate-y-0.5 hover:bg-[var(--brand-700)]"
                 >
                   Login
                 </button>
-              </div>
+              </form>
 
               <div className="mt-5 flex flex-col items-start gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
                 <button
@@ -214,7 +248,7 @@ const Login = () => {
                 </div>
               ) : null}
 
-              <div className="grid gap-4">
+              <form className="grid gap-4" onSubmit={handleForgotPassword}>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -227,6 +261,9 @@ const Login = () => {
                       onChange={handleForgotChange}
                       className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]"
                       placeholder="Enter your full name"
+                      required
+                      minLength={2}
+                      maxLength={60}
                     />
                   </div>
                   <div>
@@ -240,6 +277,10 @@ const Login = () => {
                       onChange={handleForgotChange}
                       className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]"
                       placeholder="Enter your registered email"
+                      required
+                      pattern={EMAIL_PATTERN}
+                      title="Enter a valid email address, for example name@example.com"
+                      autoComplete="email"
                     />
                   </div>
                 </div>
@@ -254,6 +295,7 @@ const Login = () => {
                     value={forgotForm.dob}
                     onChange={handleForgotChange}
                     className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]"
+                    required
                   />
                 </div>
 
@@ -269,6 +311,9 @@ const Login = () => {
                       onChange={handleForgotChange}
                       className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]"
                       placeholder="Create a new password"
+                      required
+                      minLength={6}
+                      autoComplete="new-password"
                     />
                   </div>
                   <div>
@@ -282,17 +327,20 @@ const Login = () => {
                       onChange={handleForgotChange}
                       className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]"
                       placeholder="Confirm your new password"
+                      required
+                      minLength={6}
+                      autoComplete="new-password"
                     />
                   </div>
                 </div>
 
                 <button
+                  type="submit"
                   className="w-full rounded-2xl bg-slate-900 text-white py-3 font-semibold hover:bg-slate-800 transition"
-                  onClick={handleForgotPassword}
                 >
                   Reset Password
                 </button>
-              </div>
+              </form>
 
               <button
                 type="button"

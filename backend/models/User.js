@@ -4,7 +4,9 @@ const DEFAULT_PROFILE_IMAGE = "https://www.pngall.com/wp-content/uploads/5/Profi
 const userSchema = new mongoose.Schema({
     name: {
         type: String,
-        required: true
+        required: true,
+        trim: true,
+        minlength: 2
     },
     dob: {
         type: String,
@@ -21,7 +23,13 @@ const userSchema = new mongoose.Schema({
     email: {
         type: String,
         required: true,
-        unique: true
+        unique: true,
+        lowercase: true,
+        trim: true,
+        match: [
+            /^(?!.*\.\.)[A-Za-z0-9._%+-]+@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,}$/,
+            "Please enter a valid email address"
+        ]
     },
     address: {
         type: String,
@@ -33,7 +41,8 @@ const userSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: true
+        required: true,
+        minlength: 6
     },
     role: {
         type: String,

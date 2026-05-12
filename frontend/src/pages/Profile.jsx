@@ -3,9 +3,10 @@ import { Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/NavbarComp";
 import Footer from "../components/Footer";
-import { useToast } from "../components/ToastProvider.jsx";
+import { useToast } from "../hooks/useToast.js";
 import { getProfile, updateProfile, uploadProfileImage } from "../api/authApi.jsx";
 import { getStoredToken, getStoredUser, setStoredUser } from "../utils/authStorage.js";
+import { isValidHttpUrl, isValidImageFile, isValidIndianPhone, isValidName } from "../utils/formValidation.js";
 
 const DEFAULT_PROFILE_IMAGE = "https://www.pngall.com/wp-content/uploads/5/Profile-Transparent.png";
 
@@ -67,15 +68,31 @@ const Profile = () => {
 
   const handleProfileSubmit = (e) => {
     e.preventDefault();
+
+    if (!isValidName(profileForm.name)) {
+      showError("Please enter a valid full name.");
+      return;
+    }
+
+    if (profileForm.phone && !isValidIndianPhone(profileForm.phone)) {
+      showError("Please enter a valid 10 digit Indian phone number.");
+      return;
+    }
+
+    if (profileForm.profileImage && !isValidHttpUrl(profileForm.profileImage)) {
+      showError("Please enter a valid profile image URL.");
+      return;
+    }
+
     setSavingProfile(true);
 
     updateProfile({
-      name: profileForm.name,
+      name: profileForm.name.trim(),
       dob: profileForm.dob,
-      phone: profileForm.phone,
-      profileImage: profileForm.profileImage,
-      address: profileForm.address,
-      permanentAddress: profileForm.permanentAddress,
+      phone: profileForm.phone.trim(),
+      profileImage: profileForm.profileImage.trim(),
+      address: profileForm.address.trim(),
+      permanentAddress: profileForm.permanentAddress.trim(),
     })
       .then((res) => {
         const nextUser = res.data.user;
@@ -91,6 +108,11 @@ const Profile = () => {
     const file = e.target.files?.[0];
 
     if (!file) {
+      return;
+    }
+
+    if (!isValidImageFile(file, 2)) {
+      showError("Please upload a valid image under 2 MB.");
       return;
     }
 
@@ -167,13 +189,13 @@ const Profile = () => {
               </p>
 
               <form className="mt-8 grid gap-5 md:grid-cols-2" onSubmit={handleProfileSubmit}>
-                <input type="text" name="name" value={profileForm.name} onChange={handleProfileChange} className="rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" placeholder="Full name" required />
+                <input type="text" name="name" value={profileForm.name} onChange={handleProfileChange} className="rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" placeholder="Full name" required minLength={2} maxLength={60} autoComplete="name" />
                 <input type="date" name="dob" value={profileForm.dob} onChange={handleProfileChange} className="rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" />
-                <input type="tel" name="phone" value={profileForm.phone} onChange={handleProfileChange} className="rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" placeholder="Phone number" />
+                <input type="tel" name="phone" value={profileForm.phone} onChange={handleProfileChange} className="rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" placeholder="10 digit phone number" inputMode="numeric" pattern="[6-9][0-9]{9}" title="Enter a valid 10 digit Indian phone number" autoComplete="tel" />
                 <input type="email" value={profileForm.email} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-500 outline-none" readOnly />
-                <textarea name="address" value={profileForm.address} onChange={handleProfileChange} className="min-h-28 rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)] md:col-span-2" placeholder="Current address" />
-                <textarea name="permanentAddress" value={profileForm.permanentAddress} onChange={handleProfileChange} className="min-h-28 rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)] md:col-span-2" placeholder="Permanent address" />
-                <input type="url" name="profileImage" value={profileForm.profileImage} onChange={handleProfileChange} className="rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)] md:col-span-2" placeholder="Profile image URL" />
+                <textarea name="address" value={profileForm.address} onChange={handleProfileChange} className="min-h-28 rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)] md:col-span-2" placeholder="Current address" maxLength={240} autoComplete="street-address" />
+                <textarea name="permanentAddress" value={profileForm.permanentAddress} onChange={handleProfileChange} className="min-h-28 rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)] md:col-span-2" placeholder="Permanent address" maxLength={240} />
+                <input type="url" name="profileImage" value={profileForm.profileImage} onChange={handleProfileChange} className="rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)] md:col-span-2" placeholder="Profile image URL" pattern="https?://.+" title="Enter a valid http or https image URL" />
                 <button type="submit" disabled={savingProfile} className="rounded-2xl bg-[var(--brand-600)] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[var(--brand-700)] disabled:opacity-60 md:col-span-2">
                   {savingProfile ? "Saving profile..." : "Save profile"}
                 </button>

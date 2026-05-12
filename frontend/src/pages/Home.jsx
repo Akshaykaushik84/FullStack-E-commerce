@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, Search, Sparkles, TrendingUp } from "lucide-react";
+import { ArrowRight, Search, Sparkles } from "lucide-react";
 import Navbar from "../components/NavbarComp";
 import Sidebar from "../components/sidebar";
 import ProductCard from "../components/ProductCard";
@@ -107,15 +107,14 @@ const Home = () => {
       <Navbar />
 
       <div className="mx-auto max-w-[1480px] px-2 pb-28 pt-20 sm:px-4 sm:pt-28 lg:px-5 lg:pb-16 xl:px-6">
-        <section className="relative overflow-hidden rounded-[2rem] border border-white/20 bg-[linear-gradient(135deg,var(--ink-900)_0%,var(--brand-700)_46%,var(--accent-500)_100%)] text-white shadow-2xl sm:rounded-[2.5rem]">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_35%)]" />
-          <div className="grid items-center gap-5 px-4 py-5 sm:px-7 sm:py-9 md:grid-cols-[1.05fr_0.95fr] md:px-10 md:py-12 lg:gap-10 lg:px-12 lg:py-14">
+        <section className="relative overflow-hidden rounded-[1.5rem] bg-slate-900 text-white shadow-xl sm:rounded-[2rem]">
+          <div className="grid items-center gap-5 px-4 py-5 sm:px-7 sm:py-8 md:grid-cols-[0.95fr_1.05fr] md:px-9 md:py-10 lg:gap-10 lg:px-10 lg:py-12">
             <div className="relative z-10">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[10px] uppercase tracking-[0.22em] text-cyan-100 sm:px-4 sm:py-2 sm:text-xs sm:tracking-[0.3em]">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/15 px-3 py-1.5 text-[10px] uppercase tracking-[0.22em] text-cyan-100 sm:px-4 sm:py-2 sm:text-xs sm:tracking-[0.3em]">
                 <Sparkles size={14} />
                 {activeSlide.eyebrow}
               </div>
-              <h1 className="mt-4 max-w-2xl text-2xl font-bold leading-tight sm:mt-6 sm:text-4xl md:text-5xl lg:text-6xl">
+              <h1 className="mt-4 max-w-2xl text-2xl font-bold leading-tight sm:mt-6 sm:text-4xl md:text-5xl">
                 {activeSlide.title}
               </h1>
               <p className="mt-3 max-w-xl text-sm leading-6 text-slate-200 sm:mt-5 sm:text-base md:text-lg">
@@ -141,36 +140,14 @@ const Home = () => {
                   Reset Filters
                 </button>
               </div>
-              <div className="mt-5 grid grid-cols-1 gap-3 sm:mt-8 sm:grid-cols-3 sm:gap-4">
-                <div className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
-                  <p className="text-xs uppercase tracking-[0.25em] text-slate-200">Catalog</p>
-                  <p className="mt-2 text-2xl font-bold">{pagination.totalProducts || 0}</p>
-                  <p className="mt-1 text-sm text-slate-200">Products</p>
-                </div>
-                <div className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
-                  <p className="text-xs uppercase tracking-[0.25em] text-slate-200">Categories</p>
-                  <p className="mt-2 text-2xl font-bold">{Math.max(categories.length - 1, 0)}</p>
-                  <p className="mt-1 text-sm text-slate-200">Sections</p>
-                </div>
-                <div className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
-                  <p className="text-xs uppercase tracking-[0.25em] text-slate-200">Discovery</p>
-                  <p className="mt-2 inline-flex items-center gap-2 text-2xl font-bold">
-                    <TrendingUp size={20} />
-                    Smart
-                  </p>
-                  <p className="mt-1 text-sm text-slate-200">Search and sort</p>
-                </div>
-              </div>
             </div>
 
             <div className="relative z-10">
-              <div className="rounded-[2rem] border border-white/15 bg-white/10 p-3 shadow-xl backdrop-blur-sm">
-                <img
-                  src={activeSlide.image}
-                  alt={activeSlide.title}
-                  className="h-[180px] w-full rounded-[1.25rem] object-cover sm:h-[280px] md:h-[320px] lg:h-[340px] sm:rounded-[1.5rem]"
-                />
-              </div>
+              <img
+                src={activeSlide.image}
+                alt={activeSlide.title}
+                className="h-[190px] w-full rounded-[1.25rem] object-cover sm:h-[280px] md:h-[320px] lg:h-[340px] sm:rounded-[1.5rem]"
+              />
               <div className="mt-4 flex items-center gap-2 sm:mt-5 sm:gap-3">
                 {heroSlides.map((slide, index) => (
                   <button
@@ -213,6 +190,7 @@ const Home = () => {
                     }}
                     className="w-full rounded-xl border border-slate-200 py-2.5 pl-11 pr-4 text-sm outline-none focus:border-[var(--brand-500)] sm:rounded-2xl sm:py-3"
                     placeholder="Search by product name, brand, or description"
+                    maxLength={80}
                   />
                 </div>
                 <select
