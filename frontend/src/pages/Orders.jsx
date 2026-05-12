@@ -188,7 +188,7 @@ const Orders = () => {
                         placeholder="Reason for cancel or return request"
                         className="min-h-24 rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]"
                       />
-                      <div className="flex flex-wrap gap-3">
+                      <div className="grid gap-2 sm:flex sm:flex-wrap sm:gap-3">
                         <button
                           type="button"
                           onClick={() => handleInvoiceDownload(order)}

@@ -96,16 +96,16 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(135deg,var(--brand-50)_0%,#ffffff_45%,#e6fffb_100%)] px-3 py-6 sm:px-4 sm:py-12">
-      <div className="mx-auto grid max-w-5xl gap-6 items-stretch lg:grid-cols-[1fr_1.05fr] lg:gap-8">
-        <div className="rounded-[2rem] bg-[var(--ink-900)] p-6 text-white shadow-2xl sm:p-8 md:p-10">
+    <div className="min-h-screen bg-[linear-gradient(135deg,var(--brand-50)_0%,#ffffff_45%,#e6fffb_100%)] px-3 py-4 sm:px-4 sm:py-12">
+      <div className="mx-auto grid max-w-5xl gap-4 items-stretch lg:grid-cols-[1fr_1.05fr] lg:gap-8">
+        <div className="order-2 rounded-[2rem] bg-[var(--ink-900)] p-5 text-white shadow-2xl sm:p-8 md:p-10 lg:order-1">
           <p className="text-sm uppercase tracking-[0.35em] text-teal-300 mb-4">
             Welcome Back
           </p>
-          <h1 className="text-3xl font-bold leading-tight mb-4 sm:text-4xl md:text-5xl">
+          <h1 className="text-2xl font-bold leading-tight mb-4 sm:text-4xl md:text-5xl">
             Login to manage your orders and profile
           </h1>
-          <p className="text-slate-300 text-lg mb-8">
+          <p className="text-slate-300 text-base mb-6 sm:text-lg sm:mb-8">
             Secure access, quick profile updates, and a smoother shopping flow.
           </p>
 
@@ -121,10 +121,10 @@ const Login = () => {
           </div>
         </div>
 
-        <div className="rounded-[2rem] border border-white bg-white/95 p-5 shadow-xl backdrop-blur sm:p-8 md:p-10">
+        <div className="order-1 rounded-[2rem] border border-white bg-white/95 p-4 shadow-xl backdrop-blur sm:p-8 md:p-10 lg:order-2">
           {!showForgot ? (
             <>
-              <h2 className="text-3xl font-bold text-slate-900 mb-2">Login</h2>
+              <h2 className="text-2xl font-bold text-slate-900 mb-2 sm:text-3xl">Login</h2>
               <p className="text-slate-600 mb-8">
                 Sign in to access your account.
               </p>
@@ -176,7 +176,7 @@ const Login = () => {
                 </button>
               </div>
 
-              <div className="mt-5 flex items-center justify-between text-sm">
+              <div className="mt-5 flex flex-col items-start gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
                 <button
                   type="button"
                   className="text-[var(--brand-600)] font-medium"
@@ -195,7 +195,7 @@ const Login = () => {
             </>
           ) : (
             <>
-              <h2 className="text-3xl font-bold text-slate-900 mb-2">
+              <h2 className="text-2xl font-bold text-slate-900 mb-2 sm:text-3xl">
                 Reset Password
               </h2>
               <p className="text-slate-600 mb-8">

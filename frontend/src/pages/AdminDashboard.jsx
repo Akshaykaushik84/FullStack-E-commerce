@@ -495,7 +495,7 @@ const AdminDashboard = () => {
                         </div>
                       </div>
                     </div>
-                    <div className="flex flex-wrap gap-3">
+                    <div className="grid w-full gap-2 sm:flex sm:w-auto sm:flex-wrap sm:gap-3">
                       <button onClick={() => startEditProduct(product)} className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white">Edit</button>
                       <button onClick={() => handleDeleteProduct(product._id)} className="rounded-xl bg-rose-500 px-4 py-2 text-sm font-medium text-white">Delete</button>
                     </div>
@@ -567,7 +567,7 @@ const AdminDashboard = () => {
                         {coupon.discountType === "flat" ? `Rs ${coupon.discountValue}` : `${coupon.discountValue}%`} off | Min order Rs {coupon.minimumOrderAmount || 0}
                       </p>
                     </div>
-                    <div className="flex flex-wrap gap-3">
+                    <div className="grid w-full gap-2 sm:flex sm:w-auto sm:flex-wrap sm:gap-3">
                       <span className={`rounded-full px-3 py-2 text-xs font-semibold ${coupon.isActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600"}`}>
                         {coupon.isActive ? "Active" : "Inactive"}
                       </span>
@@ -782,7 +782,7 @@ const AdminDashboard = () => {
                     <p className="font-semibold text-slate-900">Rs {Number(order.totalPrice || 0).toFixed(0)}</p>
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-3">
+                <div className="grid gap-2 sm:flex sm:flex-wrap sm:gap-3">
                   {["Approved", "Shipped", "Delivered", "Cancelled", "Return Requested", "Returned"].map((status) => (
                     <button key={status} className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white" onClick={() => handleOrderStatus(order._id, status)}>
                       Mark {status}

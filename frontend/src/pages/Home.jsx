@@ -109,23 +109,23 @@ const Home = () => {
       <div className="mx-auto max-w-[1480px] px-2 pb-28 pt-20 sm:px-4 sm:pt-28 lg:px-5 lg:pb-16 xl:px-6">
         <section className="relative overflow-hidden rounded-[2rem] border border-white/20 bg-[linear-gradient(135deg,var(--ink-900)_0%,var(--brand-700)_46%,var(--accent-500)_100%)] text-white shadow-2xl sm:rounded-[2.5rem]">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_35%)]" />
-          <div className="grid items-center gap-8 px-5 py-7 sm:px-7 sm:py-9 md:grid-cols-[1.05fr_0.95fr] md:px-10 md:py-12 lg:gap-10 lg:px-12 lg:py-14">
+          <div className="grid items-center gap-5 px-4 py-5 sm:px-7 sm:py-9 md:grid-cols-[1.05fr_0.95fr] md:px-10 md:py-12 lg:gap-10 lg:px-12 lg:py-14">
             <div className="relative z-10">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs uppercase tracking-[0.3em] text-cyan-100">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[10px] uppercase tracking-[0.22em] text-cyan-100 sm:px-4 sm:py-2 sm:text-xs sm:tracking-[0.3em]">
                 <Sparkles size={14} />
                 {activeSlide.eyebrow}
               </div>
-              <h1 className="mt-6 max-w-2xl text-3xl font-bold leading-tight sm:text-4xl md:text-5xl lg:text-6xl">
+              <h1 className="mt-4 max-w-2xl text-2xl font-bold leading-tight sm:mt-6 sm:text-4xl md:text-5xl lg:text-6xl">
                 {activeSlide.title}
               </h1>
-              <p className="mt-5 max-w-xl text-sm text-slate-200 sm:text-base md:text-lg">
+              <p className="mt-3 max-w-xl text-sm leading-6 text-slate-200 sm:mt-5 sm:text-base md:text-lg">
                 {activeSlide.subtitle}
               </p>
-              <div className="mt-8 flex flex-wrap gap-4">
+              <div className="mt-5 grid gap-2.5 sm:mt-8 sm:flex sm:flex-wrap sm:gap-4">
                 <button
                   type="button"
                   onClick={() => handleFilterChange("featured", "true")}
-                  className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-[var(--brand-700)] shadow-lg shadow-slate-900/10"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-[var(--brand-700)] shadow-lg shadow-slate-900/10 sm:w-auto sm:px-6"
                 >
                   Explore Featured
                   <ArrowRight size={16} />
@@ -136,12 +136,12 @@ const Home = () => {
                     setSearchInput("");
                     applyFilters(initialFilters);
                   }}
-                  className="rounded-full border border-white/25 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+                  className="w-full rounded-full border border-white/25 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10 sm:w-auto sm:px-6"
                 >
                   Reset Filters
                 </button>
               </div>
-              <div className="mt-8 grid gap-4 sm:grid-cols-3">
+              <div className="mt-5 grid grid-cols-1 gap-3 sm:mt-8 sm:grid-cols-3 sm:gap-4">
                 <div className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
                   <p className="text-xs uppercase tracking-[0.25em] text-slate-200">Catalog</p>
                   <p className="mt-2 text-2xl font-bold">{pagination.totalProducts || 0}</p>
@@ -168,10 +168,10 @@ const Home = () => {
                 <img
                   src={activeSlide.image}
                   alt={activeSlide.title}
-                  className="h-[220px] w-full rounded-[1.25rem] object-cover sm:h-[280px] md:h-[320px] lg:h-[340px] sm:rounded-[1.5rem]"
+                  className="h-[180px] w-full rounded-[1.25rem] object-cover sm:h-[280px] md:h-[320px] lg:h-[340px] sm:rounded-[1.5rem]"
                 />
               </div>
-              <div className="mt-5 flex items-center gap-3">
+              <div className="mt-4 flex items-center gap-2 sm:mt-5 sm:gap-3">
                 {heroSlides.map((slide, index) => (
                   <button
                     key={slide.title}
@@ -242,13 +242,13 @@ const Home = () => {
               </div>
             ) : null}
 
-            <div className="flex items-end justify-between gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.22em] text-[var(--brand-500)] sm:text-sm sm:tracking-[0.3em]">Catalog</p>
                 <h2 className="mt-1 text-xl font-bold text-slate-900 sm:mt-2 sm:text-3xl">Browse Products</h2>
                 <p className="mt-1 text-xs text-slate-500 sm:mt-2 sm:text-sm">Category: {filters.category}</p>
               </div>
-              <div className="shrink-0 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-right shadow-sm sm:rounded-2xl sm:px-5 sm:py-4">
+              <div className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left shadow-sm sm:w-auto sm:rounded-2xl sm:px-5 sm:py-4 sm:text-right">
                 <p className="text-xs text-slate-500 sm:text-sm">Page</p>
                 <p className="mt-0.5 text-sm font-semibold text-slate-900 sm:mt-1 sm:text-lg">
                   {pagination.page || 1} / {pagination.totalPages || 1}
