@@ -56,12 +56,25 @@ const placeOrder = async (req, res) => {
             return res.status(400).json({ message: "Your cart is empty" })
         }
 
+        const originalCartLength = cart.products.length
+        cart.products = cart.products.filter((item) => item.product && item.product.isActive !== false)
+
+        if (cart.products.length !== originalCartLength) {
+            await cart.save()
+        }
+
+        if (!cart.products.length) {
+            return res.status(400).json({
+                message: "Your cart had unavailable products. Please add products again before placing the order."
+            })
+        }
+
         const normalizedProducts = []
 
         for (const item of cart.products) {
             const product = item.product
 
-            if (!product || !product.isActive) {
+            if (!product || product.isActive === false) {
                 return res.status(400).json({ message: "One of the cart items is no longer available" })
             }
 
@@ -115,7 +128,9 @@ const placeOrder = async (req, res) => {
             taxPrice,
             totalPrice,
             invoiceNumber: buildInvoiceNumber(new Date().getTime().toString(16)),
-            status: "Pending"
+            status: "Pending",
+            statusManuallyUpdated: false,
+            statusUpdatedAt: new Date()
         })
 
         for (const item of cart.products) {
@@ -176,9 +191,15 @@ const updateOrderStatus = async (req, res) => {
         }
 
         order.status = status
+        order.statusManuallyUpdated = true
+        order.statusUpdatedAt = new Date()
         await order.save()
 
-        res.status(200).json(order)
+        const updatedOrder = await Order.findById(order._id)
+            .populate("products.product")
+            .populate("user", "name email")
+
+        res.status(200).json(updatedOrder)
     } catch (err) {
         res.status(500).json({ message: err.message })
     }
@@ -225,6 +246,8 @@ const cancelOrder = async (req, res) => {
         }
 
         order.status = "Cancelled"
+        order.statusManuallyUpdated = true
+        order.statusUpdatedAt = new Date()
         order.cancelReason = String(req.body.reason || "").trim()
         await restockOrderItems(order)
         await order.save()
@@ -254,6 +277,8 @@ const requestReturn = async (req, res) => {
         }
 
         order.status = "Return Requested"
+        order.statusManuallyUpdated = true
+        order.statusUpdatedAt = new Date()
         order.returnReason = String(req.body.reason || "").trim()
         await order.save()
 

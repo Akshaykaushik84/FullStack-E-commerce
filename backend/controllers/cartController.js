@@ -27,6 +27,19 @@ const formatCart = (cart) => {
     }
 }
 
+const removeUnavailableCartItems = async (cart) => {
+    if (!cart) return cart
+
+    const originalLength = cart.products.length
+    cart.products = cart.products.filter((item) => item.product && item.product.isActive !== false)
+
+    if (cart.products.length !== originalLength) {
+        await cart.save()
+    }
+
+    return cart
+}
+
 const getOrCreateCart = async (userId) => {
     let cart = await Cart.findOne({ user: userId })
 
@@ -72,6 +85,7 @@ const addToCart = async (req, res) => {
 
         await cart.save()
         const populatedCart = await Cart.findById(cart._id).populate("products.product")
+        await removeUnavailableCartItems(populatedCart)
         res.status(200).json(formatCart(populatedCart))
     } catch (err) {
         res.status(500).json({ message: err.message })
@@ -82,6 +96,7 @@ const getCart = async (req, res) => {
     try {
         const cart = await getOrCreateCart(req.user.id)
         const populatedCart = await Cart.findById(cart._id).populate("products.product")
+        await removeUnavailableCartItems(populatedCart)
         res.status(200).json(formatCart(populatedCart))
     } catch (err) {
         res.status(500).json({ message: err.message })
@@ -122,6 +137,7 @@ const updateCart = async (req, res) => {
 
         await cart.save()
         const populatedCart = await Cart.findById(cart._id).populate("products.product")
+        await removeUnavailableCartItems(populatedCart)
         res.status(200).json(formatCart(populatedCart))
     } catch (err) {
         res.status(500).json({ message: err.message })
@@ -143,6 +159,7 @@ const removeFromCart = async (req, res) => {
         await cart.save()
 
         const populatedCart = await Cart.findById(cart._id).populate("products.product")
+        await removeUnavailableCartItems(populatedCart)
         res.status(200).json(formatCart(populatedCart))
     } catch (err) {
         res.status(500).json({ message: err.message })

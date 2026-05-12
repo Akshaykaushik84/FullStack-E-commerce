@@ -20,8 +20,14 @@ router.post("/:id/reviews", authMiddleware, (req, _res, next) => {
     req.uploadPrefix = "review"
     next()
 }, upload.single("reviewImage"), createProductReview)
-router.post("/", authMiddleware, adminMiddleware, createProduct)
-router.put("/:id", authMiddleware, adminMiddleware, updateProduct)
+router.post("/", authMiddleware, adminMiddleware, (req, _res, next) => {
+    req.uploadPrefix = "product"
+    next()
+}, upload.single("productImage"), createProduct)
+router.put("/:id", authMiddleware, adminMiddleware, (req, _res, next) => {
+    req.uploadPrefix = "product"
+    next()
+}, upload.single("productImage"), updateProduct)
 router.delete("/:id", authMiddleware, adminMiddleware, deleteProduct)
 
 module.exports = router

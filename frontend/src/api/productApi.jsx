@@ -17,12 +17,24 @@ export const createProductReview = (id, reviewData, token) =>
 
 export const createProduct = (productData, token) =>
   apiClient.post("/products", productData, {
-    headers: getAuthHeaders(token),
+    headers:
+      productData instanceof FormData
+        ? {
+            ...getAuthHeaders(token),
+            "Content-Type": "multipart/form-data",
+          }
+        : getAuthHeaders(token),
   });
 
 export const updateProduct = (id, productData, token) =>
   apiClient.put(`/products/${id}`, productData, {
-    headers: getAuthHeaders(token),
+    headers:
+      productData instanceof FormData
+        ? {
+            ...getAuthHeaders(token),
+            "Content-Type": "multipart/form-data",
+          }
+        : getAuthHeaders(token),
   });
 
 export const deleteProduct = (id, token) =>

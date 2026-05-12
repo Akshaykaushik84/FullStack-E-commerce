@@ -3,6 +3,7 @@ const mongoose = require("mongoose")
 const cors = require("cors")
 const path = require("path")
 const fs = require("fs")
+const dns = require("dns")
 require("dotenv").config()
 
 const authRoutes = require("./routes/authRoutes")
@@ -13,12 +14,19 @@ const orderRoutes = require("./routes/orderRoutes")
 const couponRoutes = require("./routes/couponRoutes")
 const wishlistRoutes = require("./routes/wishlistRoutes")
 const { seedHardcodedAdmin } = require("./controllers/adminController")
+const Product = require("./models/Product")
+const { createCatalog } = require("./seed")
 
 const app = express()
 const PORT = Number(process.env.PORT || 5000)
 const frontendDistPath = path.resolve(__dirname, "../frontend/dist")
 const mongoUrl = process.env.MONGO_URL || process.env.MONGO_URI || process.env.MONGODB_URI
 let mongoConnectionError = ""
+
+dns.setServers((process.env.MONGO_DNS_SERVERS || "8.8.8.8,1.1.1.1")
+    .split(",")
+    .map((server) => server.trim())
+    .filter(Boolean))
 
 const getSafeMongoHost = (url) => {
     if (!url) return ""
@@ -60,6 +68,16 @@ if (mongoUrl) {
         .then(async () => {
             mongoConnectionError = ""
             await seedHardcodedAdmin()
+            const productCount = await Product.countDocuments()
+
+            if (productCount === 0) {
+                const products = createCatalog()
+                await Product.insertMany(products)
+                console.log(`Default catalog seeded: ${products.length} products`)
+            } else {
+                console.log(`Default catalog skipped: ${productCount} products already present`)
+            }
+
             console.log("MongoDB Connected")
             console.log("Hardcoded admin ensured: admin@gmail.com / 123456")
         })

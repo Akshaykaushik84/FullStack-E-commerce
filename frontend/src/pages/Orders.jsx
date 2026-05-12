@@ -14,6 +14,11 @@ import { getStoredToken } from "../utils/authStorage.js";
 
 const formatPrice = (price) => `Rs ${Number(price || 0).toFixed(0)}`;
 
+const formatPaymentMethod = (method) => ({
+  Card: "Debit/Credit Card",
+  "Mock Gateway": "Online Payment",
+}[method] || method || "Cash on Delivery");
+
 const saveBlob = (blob, fileName) => {
   const url = window.URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -41,8 +46,13 @@ const Orders = () => {
     [currentPage, orders]
   );
 
-  const refreshOrders = () =>
-    getUserOrders(token).then((res) => setOrders(res.data || []));
+  const refreshOrders = () => {
+    if (!token) {
+      return Promise.resolve();
+    }
+
+    return getUserOrders(token).then((res) => setOrders(res.data || []));
+  };
 
   useEffect(() => {
     if (!token) {
@@ -59,6 +69,25 @@ const Orders = () => {
       })
       .finally(() => setLoading(false));
   }, [navigate, token]);
+
+  useEffect(() => {
+    if (!token) return undefined;
+
+    const intervalId = window.setInterval(() => {
+      refreshOrders().catch(() => {});
+    }, 10000);
+
+    const handleFocus = () => {
+      refreshOrders().catch(() => {});
+    };
+
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [token]);
 
   const handleReasonChange = (orderId, value) => {
     setReasonDrafts((prev) => ({ ...prev, [orderId]: value }));
@@ -134,6 +163,11 @@ const Orders = () => {
                       <div>
                         <p className="text-sm text-slate-500">Status</p>
                         <p className="font-semibold text-[var(--brand-700)]">{order.status}</p>
+                        {order.statusUpdatedAt ? (
+                          <p className="mt-1 text-xs text-slate-400">
+                            Updated: {new Date(order.statusUpdatedAt).toLocaleString()}
+                          </p>
+                        ) : null}
                       </div>
                       <div>
                         <p className="text-sm text-slate-500">Items</p>
@@ -174,7 +208,7 @@ const Orders = () => {
                           {order.shippingAddress?.state} - {order.shippingAddress?.postalCode}
                         </p>
                         <div className="mt-4 border-t border-slate-200 pt-4 text-sm text-slate-600">
-                          <p>Payment: {order.paymentMethod}</p>
+                          <p>Payment: {formatPaymentMethod(order.paymentMethod)}</p>
                           <p>Payment status: {order.paymentStatus}</p>
                           <p>Placed on: {new Date(order.createdAt).toLocaleString()}</p>
                         </div>

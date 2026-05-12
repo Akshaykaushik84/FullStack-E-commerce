@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ChevronDown, ChevronUp, Pencil, PackageOpen, Trash2 } from "lucide-react";
 import Navbar from "../components/NavbarComp";
 import Footer from "../components/Footer";
 import { useToast } from "../components/ToastProvider.jsx";
@@ -107,6 +108,11 @@ const SectionTitle = ({ eyebrow, title, description }) => (
   </div>
 );
 
+const formatPaymentMethod = (method) => ({
+  Card: "Debit/Credit Card",
+  "Mock Gateway": "Online Payment",
+}[method] || method || "Cash on Delivery");
+
 const AdminDashboard = () => {
   const token = getStoredToken();
   const user = getStoredUser();
@@ -132,6 +138,7 @@ const AdminDashboard = () => {
   const [coupons, setCoupons] = useState([]);
   const [salesReport, setSalesReport] = useState({ summary: {}, rows: [] });
   const [productForm, setProductForm] = useState(emptyProductForm);
+  const [productImageFile, setProductImageFile] = useState(null);
   const [couponForm, setCouponForm] = useState(emptyCouponForm);
   const [editingProductId, setEditingProductId] = useState("");
   const [editingCouponId, setEditingCouponId] = useState("");
@@ -139,6 +146,14 @@ const AdminDashboard = () => {
   const [userPage, setUserPage] = useState(1);
   const [userPagination, setUserPagination] = useState({ page: 1, totalPages: 1 });
   const [adminNotice, setAdminNotice] = useState("");
+  const [showProducts, setShowProducts] = useState(false);
+  const [showUsers, setShowUsers] = useState(false);
+  const [showCarts, setShowCarts] = useState(false);
+  const [showReviews, setShowReviews] = useState(false);
+  const [showSalesRows, setShowSalesRows] = useState(false);
+  const [showOrders, setShowOrders] = useState(false);
+  const [productSearch, setProductSearch] = useState("");
+  const [productPreviewUrl, setProductPreviewUrl] = useState("");
   const { showError, showSuccess } = useToast();
 
   const refreshAdminData = useCallback(() => {
@@ -227,6 +242,30 @@ const AdminDashboard = () => {
     [products]
   );
 
+  const filteredProducts = useMemo(() => {
+    const search = productSearch.trim().toLowerCase();
+
+    if (!search) return products;
+
+    return products.filter((product) =>
+      [product.name, product.category, product.brand]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(search))
+    );
+  }, [productSearch, products]);
+
+  useEffect(() => {
+    if (!productImageFile) {
+      setProductPreviewUrl("");
+      return undefined;
+    }
+
+    const nextPreviewUrl = URL.createObjectURL(productImageFile);
+    setProductPreviewUrl(nextPreviewUrl);
+
+    return () => URL.revokeObjectURL(nextPreviewUrl);
+  }, [productImageFile]);
+
   const handleProductChange = (e) => {
     const { name, value, type, checked } = e.target;
     setProductForm((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
@@ -247,13 +286,24 @@ const AdminDashboard = () => {
       discountPercentage: Number(productForm.discountPercentage || 0),
     };
 
+    const requestPayload = new FormData();
+
+    Object.entries(payload).forEach(([key, value]) => {
+      requestPayload.append(key, value);
+    });
+
+    if (productImageFile) {
+      requestPayload.append("productImage", productImageFile);
+    }
+
     const request = editingProductId
-      ? updateProduct(editingProductId, payload, token)
-      : createProduct(payload, token);
+      ? updateProduct(editingProductId, requestPayload, token)
+      : createProduct(requestPayload, token);
 
     request
       .then(() => {
         setProductForm(emptyProductForm);
+        setProductImageFile(null);
         setEditingProductId("");
         showSuccess(editingProductId ? "Product updated successfully." : "Product created successfully.");
         refreshAdminData();
@@ -286,6 +336,7 @@ const AdminDashboard = () => {
 
   const startEditProduct = (product) => {
     setEditingProductId(product._id);
+    setProductImageFile(null);
     setProductForm({
       name: product.name || "",
       price: product.price || "",
@@ -442,7 +493,30 @@ const AdminDashboard = () => {
                 <input name="category" value={productForm.category} onChange={handleProductChange} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" placeholder="Category" />
                 <input name="brand" value={productForm.brand} onChange={handleProductChange} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" placeholder="Brand" />
               </div>
-              <input name="image" value={productForm.image} onChange={handleProductChange} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" placeholder="Image URL" />
+              <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                <input name="image" value={productForm.image} onChange={handleProductChange} className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-[var(--brand-500)]" placeholder="Image URL" />
+                <label className="grid gap-2 text-sm font-medium text-slate-700">
+                  Upload product image
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setProductImageFile(e.target.files?.[0] || null)}
+                    className="w-full rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-900 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white"
+                  />
+                </label>
+                <p className="text-xs text-slate-500">
+                  {productImageFile ? `${productImageFile.name} will be used first.` : "Upload image has priority over URL."}
+                </p>
+                {productPreviewUrl || productForm.image ? (
+                  <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                    <img
+                      src={productPreviewUrl || productForm.image}
+                      alt="Product preview"
+                      className="aspect-[4/3] w-full object-cover"
+                    />
+                  </div>
+                ) : null}
+              </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <input type="number" name="discountPercentage" value={productForm.discountPercentage} onChange={handleProductChange} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" placeholder="Discount %" />
                 <input name="tags" value={productForm.tags} onChange={handleProductChange} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]" placeholder="Tags comma separated" />
@@ -462,6 +536,7 @@ const AdminDashboard = () => {
                     className="rounded-2xl border border-slate-200 px-5 py-3"
                     onClick={() => {
                       setEditingProductId("");
+                      setProductImageFile(null);
                       setProductForm(emptyProductForm);
                     }}
                   >
@@ -473,35 +548,148 @@ const AdminDashboard = () => {
           </div>
 
           <div className="rounded-[2rem] border border-slate-100 bg-white p-5 shadow-xl sm:p-8">
-            <SectionTitle
-              eyebrow="Inventory"
-              title="Products"
-              description="Edit, delete, and inspect catalog performance."
-            />
-            <div className="space-y-4">
-              {products.map((product) => (
-                <div key={product._id} className="rounded-[1.75rem] border border-slate-100 bg-slate-50 p-4">
-                  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                    <div className="flex min-w-0 items-start gap-4">
-                      <img src={product.image} alt={product.name} className="h-20 w-20 rounded-2xl object-cover" />
-                      <div className="min-w-0">
-                        <p className="truncate text-lg font-semibold text-slate-900">{product.name}</p>
-                        <p className="mt-1 text-sm text-slate-500">{product.category || "General"} | {product.brand || "MyStore Select"}</p>
-                        <p className="mt-3 line-clamp-2 text-sm text-slate-600">{product.description}</p>
-                        <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                          <span className="rounded-full bg-[var(--brand-50)] px-3 py-1 font-semibold text-[var(--brand-700)]">Rs {product.price}</span>
-                          <span className="rounded-full bg-slate-100 px-3 py-1 font-semibold text-slate-700">Stock: {product.countInStock}</span>
-                          <span className="rounded-full bg-slate-100 px-3 py-1 font-semibold text-slate-700">Reviews: {product.numReviews || 0}</span>
+            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="mb-2 text-sm font-semibold uppercase tracking-[0.25em] text-[var(--brand-500)]">
+                  Inventory
+                </p>
+                <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">Products</h2>
+                <p className="mt-2 text-slate-600">Compact catalog controls for quick edits.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowProducts((value) => !value)}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-200 transition hover:bg-slate-800"
+              >
+                <PackageOpen size={17} />
+                {showProducts ? "Hide Products" : "Show Products"}
+                {showProducts ? <ChevronUp size={17} /> : <ChevronDown size={17} />}
+              </button>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Loaded</p>
+                <p className="mt-1 text-xl font-bold text-slate-900">{products.length}</p>
+              </div>
+              <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Low Stock</p>
+                <p className="mt-1 text-xl font-bold text-slate-900">
+                  {products.filter((product) => Number(product.countInStock || 0) <= 5).length}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Featured</p>
+                <p className="mt-1 text-xl font-bold text-slate-900">
+                  {products.filter((product) => product.featured).length}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 min-h-[28rem] rounded-2xl border border-slate-100 bg-slate-50 p-3">
+            {showProducts ? (
+              <div className="space-y-4">
+                <div className="flex flex-col gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-3 sm:flex-row sm:items-center">
+                  <input
+                    value={productSearch}
+                    onChange={(e) => setProductSearch(e.target.value)}
+                    placeholder="Search products by name, category, or brand"
+                    className="min-h-11 flex-1 rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-[var(--brand-500)]"
+                  />
+                  <span className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-600">
+                    {filteredProducts.length} shown
+                  </span>
+                </div>
+              <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white">
+                <div className="hidden max-h-[22rem] overflow-auto md:block">
+                  <table className="min-w-full text-left text-sm">
+                    <thead className="sticky top-0 z-10 bg-slate-50 text-xs uppercase tracking-[0.18em] text-slate-500">
+                      <tr>
+                        <th className="px-4 py-3">Product</th>
+                        <th className="px-4 py-3">Category</th>
+                        <th className="px-4 py-3">Price</th>
+                        <th className="px-4 py-3">Stock</th>
+                        <th className="px-4 py-3 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {filteredProducts.map((product) => (
+                        <tr key={product._id} className="bg-white hover:bg-slate-50">
+                          <td className="px-4 py-3">
+                            <div className="flex min-w-0 items-center gap-3">
+                              <img src={product.image} alt={product.name} className="h-12 w-12 rounded-xl object-cover" />
+                              <div className="min-w-0">
+                                <p className="truncate font-semibold text-slate-900">{product.name}</p>
+                                <p className="truncate text-xs text-slate-500">{product.brand || "Store Select"}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-slate-600">{product.category || "General"}</td>
+                          <td className="px-4 py-3 font-semibold text-slate-900">Rs {Number(product.price || 0).toFixed(0)}</td>
+                          <td className="px-4 py-3">
+                            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${Number(product.countInStock || 0) <= 5 ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"}`}>
+                              {product.countInStock || 0}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={() => startEditProduct(product)}
+                                className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 text-white transition hover:bg-slate-800"
+                                title="Edit product"
+                                aria-label={`Edit ${product.name}`}
+                              >
+                                <Pencil size={15} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteProduct(product._id)}
+                                className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-rose-500 text-white transition hover:bg-rose-600"
+                                title="Delete product"
+                                aria-label={`Delete ${product.name}`}
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="max-h-[22rem] space-y-3 overflow-auto bg-slate-50 p-3 md:hidden">
+                  {filteredProducts.map((product) => (
+                    <div key={product._id} className="rounded-2xl border border-slate-100 bg-white p-3">
+                      <div className="flex gap-3">
+                        <img src={product.image} alt={product.name} className="h-16 w-16 rounded-xl object-cover" />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-semibold text-slate-900">{product.name}</p>
+                          <p className="text-xs text-slate-500">{product.category || "General"} | Rs {Number(product.price || 0).toFixed(0)}</p>
+                          <p className="mt-1 text-xs text-slate-500">Stock: {product.countInStock || 0}</p>
                         </div>
                       </div>
+                      <div className="mt-3 grid grid-cols-2 gap-2">
+                        <button type="button" onClick={() => startEditProduct(product)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 py-2 text-sm font-medium text-white">
+                          <Pencil size={14} /> Edit
+                        </button>
+                        <button type="button" onClick={() => handleDeleteProduct(product._id)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-rose-500 px-3 py-2 text-sm font-medium text-white">
+                          <Trash2 size={14} /> Delete
+                        </button>
+                      </div>
                     </div>
-                    <div className="grid w-full gap-2 sm:flex sm:w-auto sm:flex-wrap sm:gap-3">
-                      <button onClick={() => startEditProduct(product)} className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white">Edit</button>
-                      <button onClick={() => handleDeleteProduct(product._id)} className="rounded-xl bg-rose-500 px-4 py-2 text-sm font-medium text-white">Delete</button>
-                    </div>
-                  </div>
+                  ))}
                 </div>
-              ))}
+              </div>
+              </div>
+            ) : (
+              <div className="flex min-h-[26rem] flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white px-5 py-8 text-center">
+                <PackageOpen className="mx-auto text-slate-400" size={34} />
+                <p className="mt-3 font-semibold text-slate-900">Products are hidden</p>
+                <p className="mt-1 text-sm text-slate-500">Use Show Products when you need to edit inventory.</p>
+              </div>
+            )}
             </div>
           </div>
         </div>
@@ -583,11 +771,20 @@ const AdminDashboard = () => {
 
         <div className="grid items-start gap-6 xl:grid-cols-[1.1fr_0.9fr] xl:gap-8">
           <div className="rounded-[2rem] border border-slate-100 bg-white p-5 shadow-xl sm:p-8">
-            <SectionTitle
-              eyebrow="Customers"
-              title="Users"
-              description="Review customer accounts, active session state, and cart access."
-            />
+            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="mb-2 text-sm font-semibold uppercase tracking-[0.25em] text-[var(--brand-500)]">Customers</p>
+                <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">Users</h2>
+                <p className="mt-2 text-slate-600">Review customer accounts, active sessions, and cart access.</p>
+              </div>
+              <button type="button" onClick={() => setShowUsers((value) => !value)} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white">
+                {showUsers ? "Hide Users" : "Show Users"}
+                {showUsers ? <ChevronUp size={17} /> : <ChevronDown size={17} />}
+              </button>
+            </div>
+            <div className="min-h-[30rem] rounded-2xl border border-slate-100 bg-slate-50 p-3">
+            {showUsers ? (
+            <>
             <div className="mb-5 flex flex-col gap-3 sm:flex-row">
               <input
                 value={userSearch}
@@ -599,7 +796,7 @@ const AdminDashboard = () => {
                 Search
               </button>
             </div>
-            <div className="space-y-4">
+            <div className="max-h-[20rem] space-y-4 overflow-auto pr-1">
               {users.map((account) => (
                 <div key={account._id} className="flex flex-col gap-4 rounded-3xl border border-slate-100 bg-slate-50 p-4 md:flex-row md:items-center md:justify-between">
                   <div>
@@ -630,9 +827,32 @@ const AdminDashboard = () => {
                 Next
               </button>
             </div>
+            </>
+            ) : (
+              <div className="flex min-h-[28rem] items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white px-5 py-8 text-center text-sm text-slate-500">
+                Users are hidden. Open them when you need account controls.
+              </div>
+            )}
+            </div>
           </div>
 
           <div className="space-y-6 xl:space-y-8">
+            <div className="rounded-[2rem] border border-slate-100 bg-white p-5 shadow-xl sm:p-8">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="mb-2 text-sm font-semibold uppercase tracking-[0.25em] text-[var(--brand-500)]">Carts</p>
+                  <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">Cart Center</h2>
+                  <p className="mt-2 text-slate-600">Inspect selected carts and all stored cart records.</p>
+                </div>
+                <button type="button" onClick={() => setShowCarts((value) => !value)} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white">
+                  {showCarts ? "Hide Carts" : "Show Carts"}
+                  {showCarts ? <ChevronUp size={17} /> : <ChevronDown size={17} />}
+                </button>
+              </div>
+            </div>
+            <div className="min-h-[30rem]">
+            {showCarts ? (
+            <>
             <div className="rounded-[2rem] border border-slate-100 bg-white p-5 shadow-xl sm:p-8">
               <SectionTitle
                 eyebrow="Cart Review"
@@ -680,17 +900,32 @@ const AdminDashboard = () => {
                 ))}
               </div>
             </div>
+            </>
+            ) : (
+              <div className="flex min-h-[30rem] items-center justify-center rounded-[2rem] border border-dashed border-slate-200 bg-white p-5 text-center text-sm text-slate-500 shadow-xl sm:p-8">
+                Carts are hidden. Open them when you need cart inspection.
+              </div>
+            )}
+            </div>
           </div>
         </div>
 
         <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr] xl:gap-8">
           <div className="rounded-[2rem] border border-slate-100 bg-white p-5 shadow-xl sm:p-8">
-            <SectionTitle
-              eyebrow="Reviews"
-              title="Review Photos"
-              description="Customer reviews that include uploaded images."
-            />
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="mb-2 text-sm font-semibold uppercase tracking-[0.25em] text-[var(--brand-500)]">Reviews</p>
+                <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">Review Photos</h2>
+                <p className="mt-2 text-slate-600">Customer reviews that include uploaded images.</p>
+              </div>
+              <button type="button" onClick={() => setShowReviews((value) => !value)} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white">
+                {showReviews ? "Hide Reviews" : "Show Reviews"}
+                {showReviews ? <ChevronUp size={17} /> : <ChevronDown size={17} />}
+              </button>
+            </div>
+            <div className="min-h-[24rem] rounded-2xl border border-slate-100 bg-slate-50 p-3">
+            {showReviews ? (
+            <div className="grid max-h-[22rem] gap-4 overflow-auto pr-1 sm:grid-cols-2">
               {reviewsWithPhotos.length ? (
                 reviewsWithPhotos.map((review) => (
                   <div key={review._id} className="rounded-3xl border border-slate-100 bg-slate-50 p-4">
@@ -703,6 +938,12 @@ const AdminDashboard = () => {
               ) : (
                 <p className="text-slate-500">No photo reviews uploaded yet.</p>
               )}
+            </div>
+            ) : (
+              <div className="flex min-h-[22rem] items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white px-5 py-8 text-center text-sm text-slate-500">
+                Reviews are hidden.
+              </div>
+            )}
             </div>
           </div>
 
@@ -722,10 +963,19 @@ const AdminDashboard = () => {
                 <p className="mt-2 text-2xl font-bold text-slate-900">{salesReport.summary?.totalOrders || 0}</p>
               </div>
             </div>
-            <button onClick={handleExportSales} className="mb-5 rounded-2xl bg-[var(--brand-600)] px-5 py-3 text-sm font-semibold text-white">
-              Export CSV
-            </button>
-            <div className="hidden max-h-[24rem] overflow-auto rounded-2xl border border-slate-100 sm:block">
+            <div className="mb-5 flex flex-col gap-3 sm:flex-row">
+              <button onClick={handleExportSales} className="rounded-2xl bg-[var(--brand-600)] px-5 py-3 text-sm font-semibold text-white">
+                Export CSV
+              </button>
+              <button type="button" onClick={() => setShowSalesRows((value) => !value)} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white">
+                {showSalesRows ? "Hide Table" : "Show Table"}
+                {showSalesRows ? <ChevronUp size={17} /> : <ChevronDown size={17} />}
+              </button>
+            </div>
+            <div className="min-h-[24rem] rounded-2xl border border-slate-100 bg-slate-50 p-3">
+            {showSalesRows ? (
+            <>
+            <div className="hidden max-h-[22rem] overflow-auto rounded-2xl border border-slate-100 bg-white sm:block">
               <table className="min-w-full text-sm">
                 <thead className="bg-slate-50 text-left text-slate-600">
                   <tr>
@@ -747,7 +997,7 @@ const AdminDashboard = () => {
                 </tbody>
               </table>
             </div>
-            <div className="space-y-3 sm:hidden">
+            <div className="max-h-[22rem] space-y-3 overflow-auto sm:hidden">
               {(salesReport.rows || []).slice(0, 8).map((row) => (
                 <div key={row.orderId} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
                   <p className="text-sm font-semibold text-slate-900">{row.invoiceNumber || "-"}</p>
@@ -759,16 +1009,31 @@ const AdminDashboard = () => {
                 </div>
               ))}
             </div>
+            </>
+            ) : (
+              <div className="flex min-h-[22rem] items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white px-5 py-8 text-center text-sm text-slate-500">
+                Sales rows are hidden. Export remains available.
+              </div>
+            )}
+            </div>
           </div>
         </div>
 
         <div className="rounded-[2rem] border border-slate-100 bg-white p-5 shadow-xl sm:p-8">
-          <SectionTitle
-            eyebrow="Fulfillment"
-            title="Orders"
-            description="Approve, ship, deliver, cancel, return, and download order invoices."
-          />
-          <div className="space-y-4">
+          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="mb-2 text-sm font-semibold uppercase tracking-[0.25em] text-[var(--brand-500)]">Fulfillment</p>
+              <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">Orders</h2>
+              <p className="mt-2 text-slate-600">Approve, ship, deliver, cancel, return, and download order invoices.</p>
+            </div>
+            <button type="button" onClick={() => setShowOrders((value) => !value)} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white">
+              {showOrders ? "Hide Orders" : "Show Orders"}
+              {showOrders ? <ChevronUp size={17} /> : <ChevronDown size={17} />}
+            </button>
+          </div>
+          <div className="min-h-[32rem] rounded-2xl border border-slate-100 bg-slate-50 p-3">
+          {showOrders ? (
+          <div className="max-h-[30rem] space-y-4 overflow-auto pr-1">
             {orders.map((order) => (
               <div key={order._id} className="rounded-3xl border border-slate-100 bg-slate-50 p-5">
                 <div className="mb-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
@@ -792,6 +1057,7 @@ const AdminDashboard = () => {
                   <div>
                     <p className="text-sm text-slate-500">Total</p>
                     <p className="font-semibold text-slate-900">Rs {Number(order.totalPrice || 0).toFixed(0)}</p>
+                    <p className="mt-1 text-xs text-slate-500">{formatPaymentMethod(order.paymentMethod)}</p>
                   </div>
                 </div>
                 <div className="grid gap-2 sm:flex sm:flex-wrap sm:gap-3">
@@ -808,6 +1074,12 @@ const AdminDashboard = () => {
                 {order.returnReason ? <p className="mt-3 text-sm text-amber-600">Return reason: {order.returnReason}</p> : null}
               </div>
             ))}
+          </div>
+          ) : (
+            <div className="flex min-h-[30rem] items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white px-5 py-8 text-center text-sm text-slate-500">
+              Orders are hidden. Open them only when managing fulfillment.
+            </div>
+          )}
           </div>
         </div>
       </div>

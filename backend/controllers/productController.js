@@ -8,6 +8,13 @@ const getActiveProductQuery = () => ({
     ]
 })
 
+const parseBoolean = (value, defaultValue = false) => {
+    if (typeof value === "boolean") return value
+    if (typeof value === "string") return value.toLowerCase() === "true"
+    if (value === undefined || value === null) return defaultValue
+    return Boolean(value)
+}
+
 const buildProductPayload = (body = {}) => ({
     name: String(body.name || "").trim(),
     price: Number(body.price || 0),
@@ -18,15 +25,19 @@ const buildProductPayload = (body = {}) => ({
     countInStock: Number(body.countInStock || 0),
     discountPercentage: Number(body.discountPercentage || 0),
     rating: Number(body.rating || 4.2),
-    featured: Boolean(body.featured),
+    featured: parseBoolean(body.featured),
     tags: Array.isArray(body.tags)
         ? body.tags.filter(Boolean)
         : String(body.tags || "")
             .split(",")
             .map((tag) => tag.trim())
             .filter(Boolean),
-    isActive: body.isActive !== false
+    isActive: parseBoolean(body.isActive, true)
 })
+
+const getUploadedImageUrl = (req) => (
+    req.file ? `${req.protocol}://${req.get("host")}/uploads/${path.basename(req.file.path)}` : ""
+)
 
 const recalculateRatings = (product) => {
     if (!product.reviews.length) {
@@ -43,7 +54,14 @@ const recalculateRatings = (product) => {
 
 exports.createProduct = async (req, res) => {
     try {
-        const product = await Product.create(buildProductPayload(req.body))
+        const payload = buildProductPayload(req.body)
+        const uploadedImage = getUploadedImageUrl(req)
+
+        if (uploadedImage) {
+            payload.image = uploadedImage
+        }
+
+        const product = await Product.create(payload)
         res.status(201).json(product)
     } catch (err) {
         res.status(400).json({ message: err.message })
@@ -176,9 +194,16 @@ exports.createProductReview = async (req, res) => {
 
 exports.updateProduct = async (req, res) => {
     try {
+        const payload = buildProductPayload(req.body)
+        const uploadedImage = getUploadedImageUrl(req)
+
+        if (uploadedImage) {
+            payload.image = uploadedImage
+        }
+
         const product = await Product.findByIdAndUpdate(
             req.params.id,
-            buildProductPayload(req.body),
+            payload,
             { returnDocument: "after", runValidators: true }
         )
 

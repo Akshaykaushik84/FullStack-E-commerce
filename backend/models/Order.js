@@ -23,7 +23,15 @@ const orderSchema = new mongoose.Schema(
         },
         paymentMethod: {
             type: String,
-            enum: ["Cash on Delivery", "UPI", "Card", "Mock Gateway"],
+            enum: [
+                "Cash on Delivery",
+                "UPI",
+                "Debit/Credit Card",
+                "Net Banking",
+                "Wallet",
+                "Card",
+                "Mock Gateway"
+            ],
             required: true
         },
         paymentStatus: {
@@ -48,6 +56,14 @@ const orderSchema = new mongoose.Schema(
             type: String,
             enum: ["Pending", "Approved", "Shipped", "Delivered", "Cancelled", "Return Requested", "Returned"],
             default: "Pending"
+        },
+        statusManuallyUpdated: {
+            type: Boolean,
+            default: false
+        },
+        statusUpdatedAt: {
+            type: Date,
+            default: null
         },
         cancelReason: {
             type: String,
