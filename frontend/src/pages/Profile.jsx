@@ -120,7 +120,7 @@ const Profile = () => {
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,var(--brand-50)_0%,#f8fbff_35%,#ffffff_100%)]">
       <Navbar />
-      <div className="mx-auto max-w-6xl px-3 pb-28 pt-24 sm:px-6 sm:pt-28 lg:pb-14">
+      <div className="mx-auto max-w-6xl px-3 pb-28 pt-22 sm:px-6 sm:pt-28 lg:pb-14">
         <div className="grid gap-6 xl:grid-cols-[0.95fr_1.35fr] xl:gap-8">
           <div className="rounded-[2rem] bg-[var(--ink-900)] p-5 text-white shadow-2xl sm:p-8 xl:sticky xl:top-28">
             <div className="h-28 w-28 overflow-hidden rounded-[2rem] border-4 border-white/10 bg-[var(--brand-500)]">
@@ -161,7 +161,7 @@ const Profile = () => {
           <div className="space-y-8">
             <div className="rounded-[2rem] border border-white bg-white/95 p-5 shadow-xl backdrop-blur sm:p-8">
               <p className="text-sm uppercase tracking-[0.3em] text-[var(--brand-500)]">My Account</p>
-              <h1 className="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">Personal details</h1>
+              <h1 className="mt-3 text-2xl font-bold text-slate-900 sm:text-4xl">Personal details</h1>
               <p className="mt-3 text-slate-600">
                 Keep your account information up to date for smoother checkout and delivery.
               </p>

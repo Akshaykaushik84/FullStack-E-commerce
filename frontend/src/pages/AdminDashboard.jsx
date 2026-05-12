@@ -725,7 +725,7 @@ const AdminDashboard = () => {
             <button onClick={handleExportSales} className="mb-5 rounded-2xl bg-[var(--brand-600)] px-5 py-3 text-sm font-semibold text-white">
               Export CSV
             </button>
-            <div className="max-h-[24rem] overflow-auto rounded-2xl border border-slate-100">
+            <div className="hidden max-h-[24rem] overflow-auto rounded-2xl border border-slate-100 sm:block">
               <table className="min-w-full text-sm">
                 <thead className="bg-slate-50 text-left text-slate-600">
                   <tr>
@@ -746,6 +746,18 @@ const AdminDashboard = () => {
                   ))}
                 </tbody>
               </table>
+            </div>
+            <div className="space-y-3 sm:hidden">
+              {(salesReport.rows || []).slice(0, 8).map((row) => (
+                <div key={row.orderId} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                  <p className="text-sm font-semibold text-slate-900">{row.invoiceNumber || "-"}</p>
+                  <p className="mt-1 text-sm text-slate-600">{row.customerName}</p>
+                  <div className="mt-3 flex items-center justify-between gap-3 text-sm">
+                    <span className="text-slate-500">{row.status}</span>
+                    <span className="font-semibold text-slate-900">Rs {Number(row.totalPrice || 0).toFixed(0)}</span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

@@ -103,12 +103,12 @@ const ProductDetails = () => {
     <div className="min-h-screen bg-[linear-gradient(180deg,var(--surface-50)_0%,#ffffff_100%)]">
       <Navbar />
       <div className="mx-auto max-w-7xl px-3 pb-28 pt-22 sm:px-5 sm:pt-28 lg:pb-16">
-        <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr] lg:gap-8">
+        <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr] lg:gap-8">
           <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
             <img
               src={product.image}
               alt={product.name}
-              className="h-[280px] w-full object-cover sm:h-[420px] lg:h-full"
+              className="h-[240px] w-full object-cover sm:h-[420px] lg:h-full"
             />
           </div>
 
