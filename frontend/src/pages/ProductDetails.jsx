@@ -3,6 +3,7 @@ import { Heart, ShoppingCart, Star } from "lucide-react";
 import { useParams } from "react-router-dom";
 import Navbar from "../components/NavbarComp";
 import Footer from "../components/Footer";
+import { useToast } from "../components/ToastProvider.jsx";
 import { addToCart } from "../api/cartApi.jsx";
 import { createProductReview, getSingleProduct } from "../api/productApi.jsx";
 import { getWishlist, toggleWishlist } from "../api/wishlistApi.jsx";
@@ -17,6 +18,7 @@ const ProductDetails = () => {
   const [wishlisted, setWishlisted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: "", reviewImage: null });
+  const { showError, showSuccess } = useToast();
 
   useEffect(() => {
     Promise.all([
@@ -38,8 +40,8 @@ const ProductDetails = () => {
     }
 
     addToCart(id, token, 1)
-      .then(() => alert("Product added to cart"))
-      .catch((err) => alert(err.response?.data?.message || "Unable to add to cart"));
+      .then(() => showSuccess("Product added to cart."))
+      .catch((err) => showError(err.response?.data?.message || "Unable to add to cart"));
   };
 
   const handleWishlist = () => {
@@ -50,7 +52,8 @@ const ProductDetails = () => {
 
     toggleWishlist(id, token)
       .then((res) => setWishlisted((res.data.items || []).some((item) => item._id === id)))
-      .catch((err) => alert(err.response?.data?.message || "Unable to update wishlist"));
+      .then(() => showSuccess(wishlisted ? "Removed from wishlist." : "Added to wishlist."))
+      .catch((err) => showError(err.response?.data?.message || "Unable to update wishlist"));
   };
 
   const handleReviewSubmit = (e) => {
@@ -73,8 +76,9 @@ const ProductDetails = () => {
       .then((res) => {
         setProduct(res.data);
         setReviewForm({ rating: 5, comment: "", reviewImage: null });
+        showSuccess("Review submitted successfully.");
       })
-      .catch((err) => alert(err.response?.data?.message || "Unable to submit review"));
+      .catch((err) => showError(err.response?.data?.message || "Unable to submit review"));
   };
 
   if (loading) {
@@ -98,7 +102,7 @@ const ProductDetails = () => {
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,var(--surface-50)_0%,#ffffff_100%)]">
       <Navbar />
-      <div className="mx-auto max-w-7xl px-3 pb-28 pt-24 sm:px-5 sm:pt-28 lg:pb-16">
+      <div className="mx-auto max-w-7xl px-3 pb-28 pt-22 sm:px-5 sm:pt-28 lg:pb-16">
         <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr] lg:gap-8">
           <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
             <img
@@ -120,7 +124,7 @@ const ProductDetails = () => {
               ) : null}
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-slate-900 sm:text-4xl">{product.name}</h1>
+              <h1 className="text-2xl font-bold text-slate-900 sm:text-4xl">{product.name}</h1>
               <p className="mt-2 text-slate-500">{product.brand || "MyStore Select"}</p>
             </div>
             <div className="flex items-center gap-3">

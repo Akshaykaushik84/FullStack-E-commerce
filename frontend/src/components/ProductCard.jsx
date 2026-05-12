@@ -1,6 +1,7 @@
 ﻿import { Heart, ShoppingBag, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import { addToCart } from "../api/cartApi.jsx";
+import { useToast } from "./ToastProvider.jsx";
 import { toggleWishlist } from "../api/wishlistApi.jsx";
 import { getStoredToken } from "../utils/authStorage.js";
 
@@ -8,6 +9,7 @@ const formatPrice = (price) => `Rs ${Number(price || 0).toFixed(0)}`;
 
 const ProductCard = ({ product, onAdded, onWishlistChanged, isWishlisted = false }) => {
   const token = getStoredToken();
+  const { showError, showSuccess } = useToast();
   const availableStock = Number.isFinite(Number(product.countInStock))
     ? Number(product.countInStock)
     : 25;
@@ -22,10 +24,12 @@ const ProductCard = ({ product, onAdded, onWishlistChanged, isWishlisted = false
       .then(() => {
         if (onAdded) {
           onAdded(`${product.name} added to cart.`);
+        } else {
+          showSuccess(`${product.name} added to cart.`);
         }
       })
       .catch((err) => {
-        alert(err.response?.data?.message || "Unable to add product to cart");
+        showError(err.response?.data?.message || "Unable to add product to cart");
       });
   };
 
@@ -40,8 +44,9 @@ const ProductCard = ({ product, onAdded, onWishlistChanged, isWishlisted = false
         if (onWishlistChanged) {
           onWishlistChanged(res.data.items || []);
         }
+        showSuccess(isWishlisted ? "Removed from wishlist." : "Added to wishlist.");
       })
-      .catch((err) => alert(err.response?.data?.message || "Unable to update wishlist"));
+      .catch((err) => showError(err.response?.data?.message || "Unable to update wishlist"));
   };
 
   const originalPrice = product.discountPercentage

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { registerUser } from "../api/authApi.jsx";
+import { useToast } from "../components/ToastProvider.jsx";
 import { claimAuthTab, hasAnotherActiveAuthTab } from "../utils/authSession";
 import { setStoredToken, setStoredUser } from "../utils/authStorage.js";
 
@@ -9,10 +10,11 @@ const Register = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
+  const { showError, showSuccess } = useToast();
 
   const handleRegister = () => {
     if (hasAnotherActiveAuthTab(email)) {
-      alert("An account is already active in another tab. Please use that tab or close it first.");
+      showError("An account is already active in another tab. Please use that tab or close it first.");
       return;
     }
 
@@ -21,12 +23,10 @@ const Register = () => {
         claimAuthTab(res.data.user?.email || email);
         setStoredToken(res.data.token);
         setStoredUser(res.data.user);
-        alert("Registered successfully!");
+        showSuccess("Registered successfully.");
         navigate("/");
       })
-      .catch((err) =>
-        alert(err.response?.data?.message || "Registration failed")
-      );
+      .catch((err) => showError(err.response?.data?.message || "Registration failed"));
   };
 
   return (

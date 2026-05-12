@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Navbar from "../components/NavbarComp";
 import Footer from "../components/Footer";
 import CartItem from "../components/CartItem";
+import { useToast } from "../components/ToastProvider.jsx";
 import { getCart, removeFromCart, updateCartQuantity } from "../api/cartApi.jsx";
 import { placeOrder } from "../api/orderApi.jsx";
 import { validateCoupon } from "../api/couponApi.jsx";
@@ -31,6 +32,7 @@ const Cart = () => {
   const [couponMessage, setCouponMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const { showError, showSuccess } = useToast();
 
   const discountAmount = couponData?.discountAmount || 0;
   const discountedSubtotal = Math.max(cart.subtotal - discountAmount, 0);
@@ -61,7 +63,7 @@ const Cart = () => {
         setCart(res.data);
         setCouponData(null);
       })
-      .catch((err) => alert(err.response?.data?.message || "Unable to update cart"));
+      .catch((err) => showError(err.response?.data?.message || "Unable to update cart"));
   };
 
   const handleRemove = (productId) => {
@@ -70,7 +72,7 @@ const Cart = () => {
         setCart(res.data);
         setCouponData(null);
       })
-      .catch((err) => alert(err.response?.data?.message || "Unable to remove item"));
+      .catch((err) => showError(err.response?.data?.message || "Unable to remove item"));
   };
 
   const handleCheckoutChange = (e) => {
@@ -84,10 +86,12 @@ const Cart = () => {
       .then((res) => {
         setCouponData(res.data);
         setCouponMessage(`${res.data.code} applied successfully.`);
+        showSuccess(`${res.data.code} applied successfully.`);
       })
       .catch((err) => {
         setCouponData(null);
         setCouponMessage(err.response?.data?.message || "Invalid coupon code.");
+        showError(err.response?.data?.message || "Invalid coupon code.");
       });
   };
 
@@ -115,20 +119,21 @@ const Cart = () => {
         setCheckoutForm(initialCheckoutForm);
         setCouponCode("");
         setCouponData(null);
+        showSuccess("Order placed successfully.");
         navigate("/orders");
       })
-      .catch((err) => alert(err.response?.data?.message || "Unable to place order"))
+      .catch((err) => showError(err.response?.data?.message || "Unable to place order"))
       .finally(() => setSubmitting(false));
   };
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,var(--surface-50)_0%,#ffffff_100%)]">
       <Navbar />
-      <div className="mx-auto max-w-7xl px-3 pb-28 pt-24 sm:px-5 sm:pt-28 lg:pb-16">
+      <div className="mx-auto max-w-7xl px-3 pb-28 pt-22 sm:px-5 sm:pt-28 lg:pb-16">
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm uppercase tracking-[0.35em] text-[var(--brand-500)]">Cart</p>
-            <h1 className="mt-2 text-3xl font-bold text-slate-900 sm:text-4xl">Your shopping bag</h1>
+            <h1 className="mt-2 text-2xl font-bold text-slate-900 sm:text-4xl">Your shopping bag</h1>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
             <p className="text-sm text-slate-500">Items in cart</p>

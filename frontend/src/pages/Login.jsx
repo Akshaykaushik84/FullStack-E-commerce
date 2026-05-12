@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { forgotPassword, loginUser } from "../api/authApi.jsx";
+import { useToast } from "../components/ToastProvider.jsx";
 import { claimAuthTab, hasAnotherActiveAuthTab } from "../utils/authSession";
 import { setStoredToken, setStoredUser } from "../utils/authStorage.js";
 
@@ -21,6 +22,7 @@ const Login = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
+  const { showError, showSuccess } = useToast();
 
   const handleLogin = () => {
     setLoginNotice("");
@@ -35,10 +37,10 @@ const Login = () => {
         claimAuthTab(res.data.user?.email || email);
         setStoredToken(res.data.token);
         setStoredUser(res.data.user);
-        alert("Login successful!");
+        showSuccess("Login successful.");
         navigate("/");
       })
-      .catch((err) => alert(err.response?.data?.message || "Login failed"));
+      .catch((err) => showError(err.response?.data?.message || "Login failed"));
   };
 
   const handleForgotChange = (e) => {

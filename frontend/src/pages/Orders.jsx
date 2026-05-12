@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Navbar from "../components/NavbarComp";
 import Footer from "../components/Footer";
 import Pagination from "../components/Pagination";
+import { useToast } from "../components/ToastProvider.jsx";
 import {
   cancelOrder,
   downloadInvoice,
@@ -31,6 +32,7 @@ const Orders = () => {
   const [reasonDrafts, setReasonDrafts] = useState({});
   const token = getStoredToken();
   const navigate = useNavigate();
+  const { showError, showSuccess } = useToast();
 
   const ordersPerPage = 4;
   const totalPages = Math.max(Math.ceil(orders.length / ordersPerPage), 1);
@@ -64,14 +66,20 @@ const Orders = () => {
 
   const handleCancel = (orderId) => {
     cancelOrder(orderId, reasonDrafts[orderId] || "", token)
-      .then(() => refreshOrders())
-      .catch((err) => alert(err.response?.data?.message || "Unable to cancel order"));
+      .then(() => {
+        showSuccess("Order cancelled successfully.");
+        return refreshOrders();
+      })
+      .catch((err) => showError(err.response?.data?.message || "Unable to cancel order"));
   };
 
   const handleReturn = (orderId) => {
     requestReturn(orderId, reasonDrafts[orderId] || "", token)
-      .then(() => refreshOrders())
-      .catch((err) => alert(err.response?.data?.message || "Unable to request return"));
+      .then(() => {
+        showSuccess("Return request submitted successfully.");
+        return refreshOrders();
+      })
+      .catch((err) => showError(err.response?.data?.message || "Unable to request return"));
   };
 
   const handleInvoiceDownload = (order) => {
@@ -79,17 +87,18 @@ const Orders = () => {
       .then((res) => {
         const fileName = `${order.invoiceNumber || `invoice-${order._id}`}.html`;
         saveBlob(res.data, fileName);
+        showSuccess("Invoice download started.");
       })
-      .catch((err) => alert(err.response?.data?.message || "Unable to download invoice"));
+      .catch((err) => showError(err.response?.data?.message || "Unable to download invoice"));
   };
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,var(--surface-50)_0%,#ffffff_100%)]">
       <Navbar />
-      <div className="mx-auto max-w-7xl px-3 pb-28 pt-24 sm:px-5 sm:pt-28 lg:pb-16">
+      <div className="mx-auto max-w-7xl px-3 pb-28 pt-22 sm:px-5 sm:pt-28 lg:pb-16">
         <div className="mb-8">
           <p className="text-sm uppercase tracking-[0.35em] text-[var(--brand-500)]">Orders</p>
-          <h1 className="mt-2 text-3xl font-bold text-slate-900 sm:text-4xl">Track your purchases</h1>
+          <h1 className="mt-2 text-2xl font-bold text-slate-900 sm:text-4xl">Track your purchases</h1>
           <p className="mt-3 text-slate-500">
             Review your latest orders, download invoices, and request cancellation or return when allowed.
           </p>

@@ -55,7 +55,7 @@ const NavbarComp = () => {
   return (
     <>
       <div className="fixed left-0 top-0 z-50 w-full border-b border-[var(--brand-100)] bg-white/88 backdrop-blur-xl shadow-sm">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-5">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-3 sm:gap-3 sm:px-5">
           <Link to="/" className="flex min-w-0 items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,var(--brand-600)_0%,var(--accent-500)_100%)] text-base font-bold text-white shadow-lg shadow-blue-200 sm:h-11 sm:w-11 sm:text-lg">
               CS
@@ -75,7 +75,7 @@ const NavbarComp = () => {
             ))}
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             {token ? (
               <>
                 <Link
@@ -100,13 +100,13 @@ const NavbarComp = () => {
               <>
                 <Link
                   to="/login"
-                  className="rounded-full border border-[var(--brand-500)] px-3 py-2 text-sm font-medium text-[var(--brand-600)] transition hover:bg-[var(--brand-50)] sm:px-4"
+                  className="rounded-full border border-[var(--brand-500)] px-2.5 py-2 text-xs font-medium text-[var(--brand-600)] transition hover:bg-[var(--brand-50)] sm:px-4 sm:text-sm"
                 >
                   Login
                 </Link>
                 <Link
                   to="/register"
-                  className="rounded-full bg-[var(--brand-600)] px-3 py-2 text-sm font-medium text-white transition hover:bg-[var(--brand-700)] sm:px-4"
+                  className="rounded-full bg-[var(--brand-600)] px-2.5 py-2 text-xs font-medium text-white transition hover:bg-[var(--brand-700)] sm:px-4 sm:text-sm"
                 >
                   Register
                 </Link>

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Navbar from "../components/NavbarComp";
 import Footer from "../components/Footer";
+import { useToast } from "../components/ToastProvider.jsx";
 import {
   deleteAdminUser,
   exportSalesReport,
@@ -138,6 +139,7 @@ const AdminDashboard = () => {
   const [userPage, setUserPage] = useState(1);
   const [userPagination, setUserPagination] = useState({ page: 1, totalPages: 1 });
   const [adminNotice, setAdminNotice] = useState("");
+  const { showError, showSuccess } = useToast();
 
   const refreshAdminData = useCallback(() => {
     Promise.allSettled([
@@ -253,9 +255,10 @@ const AdminDashboard = () => {
       .then(() => {
         setProductForm(emptyProductForm);
         setEditingProductId("");
+        showSuccess(editingProductId ? "Product updated successfully." : "Product created successfully.");
         refreshAdminData();
       })
-      .catch((err) => alert(err.response?.data?.message || "Unable to save product"));
+      .catch((err) => showError(err.response?.data?.message || "Unable to save product"));
   };
 
   const handleCouponSubmit = (e) => {
@@ -275,9 +278,10 @@ const AdminDashboard = () => {
       .then(() => {
         setCouponForm(emptyCouponForm);
         setEditingCouponId("");
+        showSuccess(editingCouponId ? "Coupon updated successfully." : "Coupon created successfully.");
         refreshAdminData();
       })
-      .catch((err) => alert(err.response?.data?.message || "Unable to save coupon"));
+      .catch((err) => showError(err.response?.data?.message || "Unable to save coupon"));
   };
 
   const startEditProduct = (product) => {
@@ -310,20 +314,29 @@ const AdminDashboard = () => {
 
   const handleDeleteProduct = (productId) => {
     deleteProduct(productId, token)
-      .then(() => refreshAdminData())
-      .catch((err) => alert(err.response?.data?.message || "Unable to delete product"));
+      .then(() => {
+        showSuccess("Product deleted successfully.");
+        return refreshAdminData();
+      })
+      .catch((err) => showError(err.response?.data?.message || "Unable to delete product"));
   };
 
   const handleDeleteCoupon = (couponId) => {
     deleteCoupon(couponId, token)
-      .then(() => refreshAdminData())
-      .catch((err) => alert(err.response?.data?.message || "Unable to delete coupon"));
+      .then(() => {
+        showSuccess("Coupon deleted successfully.");
+        return refreshAdminData();
+      })
+      .catch((err) => showError(err.response?.data?.message || "Unable to delete coupon"));
   };
 
   const handleOrderStatus = (orderId, status) => {
     updateOrderStatus(orderId, status, token)
-      .then(() => refreshAdminData())
-      .catch((err) => alert(err.response?.data?.message || "Unable to update order status"));
+      .then(() => {
+        showSuccess(`Order marked ${status}.`);
+        return refreshAdminData();
+      })
+      .catch((err) => showError(err.response?.data?.message || "Unable to update order status"));
   };
 
   const handleDeleteUser = (userId) => {
@@ -332,27 +345,37 @@ const AdminDashboard = () => {
         if (selectedCart?.user?._id === userId) {
           setSelectedCart(null);
         }
+        showSuccess("User deleted successfully.");
         refreshAdminData();
       })
-      .catch((err) => alert(err.response?.data?.message || "Unable to delete user"));
+      .catch((err) => showError(err.response?.data?.message || "Unable to delete user"));
   };
 
   const handleViewCart = (userId) => {
     getAdminUserCart(userId, token)
-      .then((res) => setSelectedCart(res.data))
-      .catch((err) => alert(err.response?.data?.message || "Cart not found for this user"));
+      .then((res) => {
+        setSelectedCart(res.data);
+        showSuccess("Cart loaded successfully.");
+      })
+      .catch((err) => showError(err.response?.data?.message || "Cart not found for this user"));
   };
 
   const handleExportSales = () => {
     exportSalesReport(token)
-      .then((res) => saveBlob(res.data, "sales-report.csv"))
-      .catch((err) => alert(err.response?.data?.message || "Unable to export report"));
+      .then((res) => {
+        saveBlob(res.data, "sales-report.csv");
+        showSuccess("Sales report export started.");
+      })
+      .catch((err) => showError(err.response?.data?.message || "Unable to export report"));
   };
 
   const handleInvoiceDownload = (order) => {
     downloadInvoice(order._id, token)
-      .then((res) => saveBlob(res.data, `${order.invoiceNumber || `invoice-${order._id}`}.html`))
-      .catch((err) => alert(err.response?.data?.message || "Unable to download invoice"));
+      .then((res) => {
+        saveBlob(res.data, `${order.invoiceNumber || `invoice-${order._id}`}.html`);
+        showSuccess("Invoice download started.");
+      })
+      .catch((err) => showError(err.response?.data?.message || "Unable to download invoice"));
   };
 
   if (user?.role !== "admin") {
@@ -367,10 +390,10 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,var(--surface-50)_0%,var(--brand-50)_100%)]">
       <Navbar />
-      <div className="mx-auto max-w-7xl space-y-6 px-3 pb-28 pt-24 sm:px-5 sm:pt-28 lg:space-y-8 lg:px-6 lg:pb-14">
+      <div className="mx-auto max-w-7xl space-y-5 px-3 pb-28 pt-22 sm:px-5 sm:pt-28 lg:space-y-8 lg:px-6 lg:pb-14">
         <div className="rounded-[2rem] bg-[var(--ink-900)] p-5 text-white shadow-2xl sm:p-8">
           <p className="mb-4 text-sm uppercase tracking-[0.35em] text-teal-300">Admin Console</p>
-          <h1 className="mb-3 text-3xl font-bold sm:text-4xl md:text-5xl">
+          <h1 className="mb-3 text-2xl font-bold leading-tight sm:text-4xl md:text-5xl">
             Store operations, reports, and customer control
           </h1>
           <p className="text-base text-slate-300 sm:text-lg">

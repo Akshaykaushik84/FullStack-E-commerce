@@ -16,6 +16,7 @@ import Cart from "./pages/Cart";
 import Orders from "./pages/Orders";
 import ProductDetails from "./pages/ProductDetails";
 import Wishlist from "./pages/Wishlist";
+import { ToastProvider } from "./components/ToastProvider";
 import { forceClearCurrentTabAuth, getActiveAuthOwner, getTabId, releaseAuthTab } from "./utils/authSession";
 import { getStoredToken, getStoredUser } from "./utils/authStorage";
 
@@ -87,9 +88,11 @@ const AuthTabGuard = () => {
 
 const App = () => {
   return (
-    <Router>
-      <AuthTabGuard />
-    </Router>
+    <ToastProvider>
+      <Router>
+        <AuthTabGuard />
+      </Router>
+    </ToastProvider>
   );
 };
 

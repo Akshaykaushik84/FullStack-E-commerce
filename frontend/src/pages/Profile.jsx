@@ -3,6 +3,7 @@ import { Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/NavbarComp";
 import Footer from "../components/Footer";
+import { useToast } from "../components/ToastProvider.jsx";
 import { getProfile, updateProfile, uploadProfileImage } from "../api/authApi.jsx";
 import { getStoredToken, getStoredUser, setStoredUser } from "../utils/authStorage.js";
 
@@ -23,6 +24,7 @@ const Profile = () => {
   const [loading, setLoading] = useState(!storedUser);
   const [savingProfile, setSavingProfile] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const { showError, showSuccess } = useToast();
 
   useEffect(() => {
     const token = getStoredToken();
@@ -79,9 +81,9 @@ const Profile = () => {
         const nextUser = res.data.user;
         setProfileForm((prev) => ({ ...prev, ...nextUser }));
         setStoredUser(nextUser);
-        alert(res.data.message || "Profile updated successfully");
+        showSuccess(res.data.message || "Profile updated successfully");
       })
-      .catch((err) => alert(err.response?.data?.message || "Profile update failed"))
+      .catch((err) => showError(err.response?.data?.message || "Profile update failed"))
       .finally(() => setSavingProfile(false));
   };
 
@@ -100,8 +102,9 @@ const Profile = () => {
       .then((res) => {
         setProfileForm((prev) => ({ ...prev, profileImage: res.data.imageUrl }));
         setStoredUser(res.data.user);
+        showSuccess("Profile image uploaded successfully.");
       })
-      .catch((err) => alert(err.response?.data?.message || "Image upload failed"))
+      .catch((err) => showError(err.response?.data?.message || "Image upload failed"))
       .finally(() => setUploadingImage(false));
   };
 
