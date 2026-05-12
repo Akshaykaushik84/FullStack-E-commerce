@@ -53,7 +53,7 @@ const Wishlist = () => {
           </div>
         ) : items.length ? (
           <div className="space-y-8">
-            <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:gap-4 xl:grid-cols-3">
+            <div className="grid grid-cols-2 gap-2 sm:gap-4 xl:grid-cols-3">
               {visibleItems.map((product) => (
                 <ProductCard
                   key={product._id}

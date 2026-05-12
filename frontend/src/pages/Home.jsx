@@ -262,7 +262,7 @@ const Home = () => {
               </div>
             ) : products.length ? (
               <>
-                <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:gap-4 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+                <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                   {products.map((product) => (
                     <ProductCard
                       key={product._id}
