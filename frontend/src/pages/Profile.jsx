@@ -1,12 +1,13 @@
 ﻿import { useEffect, useState } from "react";
-import { Upload } from "lucide-react";
+import { LocateFixed, MapPin, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/NavbarComp";
 import Footer from "../components/Footer";
 import { useToast } from "../hooks/useToast.js";
 import { getProfile, updateProfile, uploadProfileImage } from "../api/authApi.jsx";
 import { getStoredToken, getStoredUser, setStoredUser } from "../utils/authStorage.js";
-import { isValidHttpUrl, isValidImageFile, isValidIndianPhone, isValidName } from "../utils/formValidation.js";
+import { isValidImageFile, isValidIndianPhone, isValidName } from "../utils/formValidation.js";
+import { buildMapLink, getCurrentPosition } from "../utils/locationUtils.js";
 
 const DEFAULT_PROFILE_IMAGE = "https://www.pngall.com/wp-content/uploads/5/Profile-Transparent.png";
 
@@ -21,10 +22,13 @@ const Profile = () => {
     email: storedUser?.email || "",
     address: storedUser?.address || "",
     permanentAddress: storedUser?.permanentAddress || "",
+    location: storedUser?.location || {},
   });
   const [loading, setLoading] = useState(!storedUser);
   const [savingProfile, setSavingProfile] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [fetchingLocation, setFetchingLocation] = useState(false);
+  const [profileImageFailed, setProfileImageFailed] = useState(false);
   const { showError, showSuccess } = useToast();
 
   useEffect(() => {
@@ -46,6 +50,7 @@ const Profile = () => {
           email: res.data.email || "",
           address: res.data.address || "",
           permanentAddress: res.data.permanentAddress || "",
+          location: res.data.location || {},
           role: res.data.role,
           createdAt: res.data.createdAt,
         };
@@ -79,20 +84,15 @@ const Profile = () => {
       return;
     }
 
-    if (profileForm.profileImage && !isValidHttpUrl(profileForm.profileImage)) {
-      showError("Please enter a valid profile image URL.");
-      return;
-    }
-
     setSavingProfile(true);
 
     updateProfile({
       name: profileForm.name.trim(),
       dob: profileForm.dob,
       phone: profileForm.phone.trim(),
-      profileImage: profileForm.profileImage.trim(),
       address: profileForm.address.trim(),
       permanentAddress: profileForm.permanentAddress.trim(),
+      location: profileForm.location,
     })
       .then((res) => {
         const nextUser = res.data.user;
@@ -102,6 +102,24 @@ const Profile = () => {
       })
       .catch((err) => showError(err.response?.data?.message || "Profile update failed"))
       .finally(() => setSavingProfile(false));
+  };
+
+  const handleUseCurrentLocation = () => {
+    setFetchingLocation(true);
+
+    getCurrentPosition()
+      .then((location) => {
+        setProfileForm((prev) => ({
+          ...prev,
+          location: {
+            ...location,
+            mapUrl: buildMapLink(location.latitude, location.longitude),
+          },
+        }));
+        showSuccess("Location captured. Save profile to keep it.");
+      })
+      .catch((err) => showError(err.message || "Unable to get current location."))
+      .finally(() => setFetchingLocation(false));
   };
 
   const handleImageUpload = (e) => {
@@ -122,6 +140,7 @@ const Profile = () => {
 
     uploadProfileImage(formData)
       .then((res) => {
+        setProfileImageFailed(false);
         setProfileForm((prev) => ({ ...prev, profileImage: res.data.imageUrl }));
         setStoredUser(res.data.user);
         showSuccess("Profile image uploaded successfully.");
@@ -147,9 +166,10 @@ const Profile = () => {
           <div className="rounded-[2rem] bg-[var(--ink-900)] p-5 text-white shadow-2xl sm:p-8 xl:sticky xl:top-28">
             <div className="h-28 w-28 overflow-hidden rounded-[2rem] border-4 border-white/10 bg-[var(--brand-500)]">
               <img
-                src={profileForm.profileImage || DEFAULT_PROFILE_IMAGE}
+                src={profileImageFailed ? DEFAULT_PROFILE_IMAGE : profileForm.profileImage || DEFAULT_PROFILE_IMAGE}
                 alt={profileForm.name || "Profile"}
                 className="h-full w-full object-cover"
+                onError={() => setProfileImageFailed(true)}
               />
             </div>
 
@@ -177,6 +197,20 @@ const Profile = () => {
                 <p className="text-slate-300">Permanent Address</p>
                 <p className="mt-1 font-semibold">{profileForm.permanentAddress || "Not added"}</p>
               </div>
+              <div className="rounded-2xl bg-white/10 p-4">
+                <p className="text-slate-300">Saved Location</p>
+                {profileForm.location?.mapUrl ? (
+                  <div className="mt-1">
+                    <p className="font-semibold">{profileForm.location.placeName || "Saved location"}</p>
+                    <a className="mt-2 inline-flex items-center gap-2 font-semibold text-cyan-200" href={profileForm.location.mapUrl} target="_blank" rel="noreferrer">
+                      <MapPin size={15} />
+                      Open map
+                    </a>
+                  </div>
+                ) : (
+                  <p className="mt-1 font-semibold">Not added</p>
+                )}
+              </div>
             </div>
           </div>
 
@@ -195,7 +229,31 @@ const Profile = () => {
                 <input type="email" value={profileForm.email} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-500 outline-none" readOnly />
                 <textarea name="address" value={profileForm.address} onChange={handleProfileChange} className="min-h-28 rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)] md:col-span-2" placeholder="Current address" maxLength={240} autoComplete="street-address" />
                 <textarea name="permanentAddress" value={profileForm.permanentAddress} onChange={handleProfileChange} className="min-h-28 rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)] md:col-span-2" placeholder="Permanent address" maxLength={240} />
-                <input type="url" name="profileImage" value={profileForm.profileImage} onChange={handleProfileChange} className="rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)] md:col-span-2" placeholder="Profile image URL" pattern="https?://.+" title="Enter a valid http or https image URL" />
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 md:col-span-2">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="font-semibold text-slate-900">Location</p>
+                      <p className="mt-1 text-sm text-slate-500">
+                        {profileForm.location?.placeName ||
+                        (profileForm.location?.latitude && profileForm.location?.longitude
+                          ? `${profileForm.location.latitude}, ${profileForm.location.longitude}`
+                          : "No location saved yet")}
+                      </p>
+                    </div>
+                    <button type="button" onClick={handleUseCurrentLocation} disabled={fetchingLocation} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60">
+                      <LocateFixed size={16} />
+                      {fetchingLocation ? "Getting..." : "Use current location"}
+                    </button>
+                  </div>
+                  {profileForm.location?.mapUrl ? (
+                    <a href={profileForm.location.mapUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex text-sm font-semibold text-[var(--brand-600)]">
+                      View saved location on map
+                    </a>
+                  ) : null}
+                </div>
+                <div className="rounded-2xl border border-dashed border-[var(--brand-200)] bg-[var(--brand-50)] px-4 py-4 text-sm text-slate-600 md:col-span-2">
+                  Your profile photo is saved with your account. Upload a new image from the profile card to see it on any device after login.
+                </div>
                 <button type="submit" disabled={savingProfile} className="rounded-2xl bg-[var(--brand-600)] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[var(--brand-700)] disabled:opacity-60 md:col-span-2">
                   {savingProfile ? "Saving profile..." : "Save profile"}
                 </button>

@@ -1156,6 +1156,16 @@ const AdminDashboard = () => {
                     <p className="mt-1 text-xs text-slate-500">{formatPaymentMethod(order.paymentMethod)}</p>
                   </div>
                 </div>
+                {order.shippingAddress?.location?.mapUrl ? (
+                  <a
+                    href={order.shippingAddress.location.mapUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mb-4 inline-flex rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-[var(--brand-600)]"
+                  >
+                    View delivery location
+                  </a>
+                ) : null}
                 <div className="grid gap-2 sm:flex sm:flex-wrap sm:gap-3">
                   {["Approved", "Shipped", "Delivered", "Cancelled", "Return Requested", "Returned"].map((status) => (
                     <button key={status} className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white" onClick={() => handleOrderStatus(order._id, status)}>

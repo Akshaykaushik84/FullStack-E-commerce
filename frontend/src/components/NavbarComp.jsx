@@ -1,9 +1,10 @@
-import { createElement, useState } from "react";
+import { createElement, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Heart, Home, Menu, Package, Shield, ShoppingCart, User, X } from "lucide-react";
+import { Heart, Home, MapPin, Menu, Package, Shield, ShoppingCart, X } from "lucide-react";
 import { logoutUser } from "../api/authApi.jsx";
 import { releaseAuthTab } from "../utils/authSession";
-import { clearStoredAuth, getStoredToken, getStoredUser } from "../utils/authStorage.js";
+import { AUTH_USER_CHANGED_EVENT, clearStoredAuth, getStoredToken, getStoredUser } from "../utils/authStorage.js";
+import { getLocationLabel } from "../utils/locationUtils.js";
 
 const DEFAULT_PROFILE_IMAGE = "https://www.pngall.com/wp-content/uploads/5/Profile-Transparent.png";
 
@@ -20,11 +21,35 @@ const HoverLabel = ({ text }) => (
   </span>
 );
 
+const readAuthSnapshot = () => ({
+  token: getStoredToken(),
+  user: getStoredUser(),
+});
+
 const NavbarComp = () => {
-  const token = getStoredToken();
-  const user = getStoredUser();
-  const location = useLocation();
+  const [{ token, user }, setAuthSnapshot] = useState(readAuthSnapshot);
+  const routeLocation = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [avatarFailed, setAvatarFailed] = useState(false);
+  const isLoggedIn = Boolean(token && user?.email);
+  const profileImage = avatarFailed ? DEFAULT_PROFILE_IMAGE : user?.profileImage || DEFAULT_PROFILE_IMAGE;
+  const locationLabel = isLoggedIn ? getLocationLabel(user?.location) : "";
+  const locationLink = user?.location?.mapUrl || "";
+
+  useEffect(() => {
+    const syncAuthSnapshot = () => {
+      setAvatarFailed(false);
+      setAuthSnapshot(readAuthSnapshot());
+    };
+
+    window.addEventListener(AUTH_USER_CHANGED_EVENT, syncAuthSnapshot);
+    window.addEventListener("storage", syncAuthSnapshot);
+
+    return () => {
+      window.removeEventListener(AUTH_USER_CHANGED_EVENT, syncAuthSnapshot);
+      window.removeEventListener("storage", syncAuthSnapshot);
+    };
+  }, []);
 
   const handleLogout = () => {
     logoutUser()
@@ -36,19 +61,22 @@ const NavbarComp = () => {
       });
   };
 
-  const navItems = [
-    { to: "/", icon: Home, label: "Home", active: location.pathname === "/" },
-    { to: "/orders", icon: Package, label: "Orders", active: location.pathname === "/orders" },
-    { to: "/wishlist", icon: Heart, label: "Wishlist", active: location.pathname === "/wishlist" },
-    { to: "/cart", icon: ShoppingCart, label: "Cart", active: location.pathname === "/cart" },
-  ];
+  const navItems = [{ to: "/", icon: Home, label: "Home", active: routeLocation.pathname === "/" }];
 
-  if (user?.role === "admin") {
+  if (isLoggedIn) {
+    navItems.push(
+      { to: "/orders", icon: Package, label: "Orders", active: routeLocation.pathname === "/orders" },
+      { to: "/wishlist", icon: Heart, label: "Wishlist", active: routeLocation.pathname === "/wishlist" },
+      { to: "/cart", icon: ShoppingCart, label: "Cart", active: routeLocation.pathname === "/cart" },
+    );
+  }
+
+  if (isLoggedIn && user?.role === "admin") {
     navItems.push({
       to: "/admin",
       icon: Shield,
       label: "Admin",
-      active: location.pathname === "/admin",
+      active: routeLocation.pathname === "/admin",
     });
   }
 
@@ -76,16 +104,29 @@ const NavbarComp = () => {
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-3">
-            {token ? (
+            {isLoggedIn ? (
               <>
+                {locationLabel ? (
+                  <a
+                    href={locationLink || undefined}
+                    target={locationLink ? "_blank" : undefined}
+                    rel={locationLink ? "noreferrer" : undefined}
+                    className="hidden max-w-[190px] items-center gap-2 rounded-full border border-[var(--brand-100)] bg-[var(--brand-50)] px-3 py-2 text-xs font-semibold text-[var(--brand-700)] transition hover:border-[var(--brand-400)] hover:bg-white lg:flex"
+                    title={locationLabel}
+                  >
+                    <MapPin size={15} className="shrink-0" />
+                    <span className="truncate">{locationLabel}</span>
+                  </a>
+                ) : null}
                 <Link
                   to="/profile"
                   className="group relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border-2 border-[var(--brand-100)] bg-[var(--brand-50)] transition hover:-translate-y-0.5 hover:border-[var(--brand-500)] sm:h-11 sm:w-11"
                 >
                   <img
-                    src={user?.profileImage || DEFAULT_PROFILE_IMAGE}
+                    src={profileImage}
                     alt={user?.name || "Profile"}
                     className="h-full w-full object-cover"
+                    onError={() => setAvatarFailed(true)}
                   />
                   <HoverLabel text="Profile" />
                 </Link>
@@ -110,9 +151,6 @@ const NavbarComp = () => {
                 >
                   Register
                 </Link>
-                <div className="hidden h-11 w-11 items-center justify-center rounded-full border border-slate-200 text-slate-500 sm:flex">
-                  <User size={18} />
-                </div>
               </>
             )}
 
@@ -130,6 +168,18 @@ const NavbarComp = () => {
         {menuOpen ? (
           <div className="border-t border-slate-200 bg-white px-4 py-4 md:hidden">
             <div className="grid gap-2">
+              {isLoggedIn && locationLabel ? (
+                <a
+                  href={locationLink || undefined}
+                  target={locationLink ? "_blank" : undefined}
+                  rel={locationLink ? "noreferrer" : undefined}
+                  className="flex items-center gap-3 rounded-2xl border border-[var(--brand-100)] bg-[var(--brand-50)] px-4 py-3 text-sm font-semibold text-[var(--brand-700)]"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  <MapPin size={18} />
+                  <span className="truncate">{locationLabel}</span>
+                </a>
+              ) : null}
               {navItems.map(({ to, icon: Icon, label, active }) => (
                 <Link
                   key={to}
@@ -145,7 +195,7 @@ const NavbarComp = () => {
                   <span>{label}</span>
                 </Link>
               ))}
-              {token ? (
+              {isLoggedIn ? (
                 <button
                   type="button"
                   onClick={handleLogout}
@@ -159,7 +209,7 @@ const NavbarComp = () => {
         ) : null}
       </div>
 
-      {token ? (
+      {isLoggedIn ? (
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-3 py-2 backdrop-blur md:hidden">
           <div className={`mx-auto grid max-w-md gap-2 ${user?.role === "admin" ? "grid-cols-5" : "grid-cols-4"}`}>
             {navItems.map(({ to, icon: Icon, label, active }) => (

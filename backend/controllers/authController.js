@@ -1,7 +1,6 @@
 ﻿const User = require("../models/User")
 const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
-const path = require("path")
 const JWT_SECRET = process.env.JWT_SECRET || "secretkey"
 
 const DEFAULT_PROFILE_IMAGE = "https://www.pngall.com/wp-content/uploads/5/Profile-Transparent.png"
@@ -58,6 +57,85 @@ const isValidUrl = (value) => {
     }
 }
 
+const isValidProfileImageValue = (value) => {
+    const rawValue = String(value || "").trim()
+    if (!rawValue) return true
+
+    if (/^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(rawValue)) {
+        return rawValue.length <= 3 * 1024 * 1024
+    }
+
+    return isValidUrl(rawValue)
+}
+
+const buildProfileImageDataUrl = (file) =>
+    `data:${file.mimetype};base64,${file.buffer.toString("base64")}`
+
+const getPlaceNameFromCoordinates = async (latitude, longitude) => {
+    if (typeof fetch !== "function") {
+        return ""
+    }
+
+    const controller = typeof AbortController === "function" ? new AbortController() : null
+    const timeout = controller ? setTimeout(() => controller.abort(), 3500) : null
+
+    try {
+        const url = new URL("https://nominatim.openstreetmap.org/reverse")
+        url.searchParams.set("format", "jsonv2")
+        url.searchParams.set("lat", String(latitude))
+        url.searchParams.set("lon", String(longitude))
+        url.searchParams.set("zoom", "12")
+        url.searchParams.set("addressdetails", "1")
+
+        const response = await fetch(url, {
+            headers: {
+                Accept: "application/json",
+                "User-Agent": "CartSphere ecommerce location feature"
+            },
+            signal: controller?.signal
+        })
+
+        if (!response.ok) {
+            return ""
+        }
+
+        const data = await response.json()
+        const address = data.address || {}
+        const city = address.city || address.town || address.village || address.suburb || address.county
+        const region = address.state || address.country
+
+        return [city, region].filter(Boolean).join(", ") || String(data.display_name || "").split(",").slice(0, 2).join(", ").trim()
+    } catch (_err) {
+        return ""
+    } finally {
+        if (timeout) clearTimeout(timeout)
+    }
+}
+
+const buildLocationPayload = async (location = {}, currentLocation = {}) => {
+    const latitude = Number(location.latitude)
+    const longitude = Number(location.longitude)
+
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        return null
+    }
+
+    const providedPlaceName = String(location.placeName || "").trim()
+    const sameCoordinates =
+        Number(currentLocation?.latitude) === latitude &&
+        Number(currentLocation?.longitude) === longitude
+    const placeName = providedPlaceName || (sameCoordinates ? currentLocation?.placeName : "") || await getPlaceNameFromCoordinates(latitude, longitude)
+
+    return {
+        latitude,
+        longitude,
+        mapUrl: `https://www.google.com/maps?q=${latitude},${longitude}`,
+        placeName: placeName || "Saved location",
+        accuracy: Number.isFinite(Number(location.accuracy)) ? Number(location.accuracy) : null,
+        updatedAt: new Date()
+    }
+}
+
 const normalizeProfileFields = async (user) => {
     let hasChanges = false
 
@@ -94,6 +172,7 @@ const buildAuthResponse = (user) => ({
         email: user.email,
         address: user.address,
         permanentAddress: user.permanentAddress,
+        location: user.location || {},
         role: user.role,
         createdAt: user.createdAt
     }
@@ -281,6 +360,7 @@ exports.updateProfile = async (req, res) => {
             profileImage,
             address,
             permanentAddress,
+            location,
             currentPassword,
             newEmail,
             newPassword
@@ -308,14 +388,23 @@ exports.updateProfile = async (req, res) => {
             updates.phone = phone.trim()
         }
         if (typeof profileImage === "string") {
-            if (!isValidUrl(profileImage)) {
-                return res.status(400).json({ message: "Please enter a valid profile image URL" })
+            if (!isValidProfileImageValue(profileImage)) {
+                return res.status(400).json({ message: "Please upload a valid profile image" })
             }
             updates.profileImage = profileImage.trim() || DEFAULT_PROFILE_IMAGE
         }
         if (typeof address === "string") updates.address = address.trim()
         if (typeof permanentAddress === "string") {
             updates.permanentAddress = permanentAddress.trim()
+        }
+        if (location && typeof location === "object") {
+            const nextLocation = await buildLocationPayload(location, user.location)
+
+            if (!nextLocation) {
+                return res.status(400).json({ message: "Please provide a valid location" })
+            }
+
+            updates.location = nextLocation
         }
 
         const normalizedNewEmail = normalizeTextValue(newEmail)
@@ -380,6 +469,33 @@ exports.updateProfile = async (req, res) => {
     }
 }
 
+exports.updateLocation = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id)
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" })
+        }
+
+        const nextLocation = await buildLocationPayload(req.body || {}, user.location)
+
+        if (!nextLocation) {
+            return res.status(400).json({ message: "Please provide a valid location" })
+        }
+
+        user.location = nextLocation
+        user.lastSeenAt = new Date()
+        await user.save()
+
+        res.json({
+            message: "Location updated successfully",
+            user: buildAuthResponse(user).user
+        })
+    } catch (err) {
+        res.status(500).json({ message: err.message })
+    }
+}
+
 exports.uploadProfileImage = async (req, res) => {
     try {
         const user = await User.findById(req.user.id)
@@ -388,11 +504,11 @@ exports.uploadProfileImage = async (req, res) => {
             return res.status(404).json({ message: "User not found" })
         }
 
-        if (!req.file) {
+        if (!req.file?.buffer) {
             return res.status(400).json({ message: "Please select an image to upload" })
         }
 
-        const imageUrl = `${req.protocol}://${req.get("host")}/uploads/${path.basename(req.file.path)}`
+        const imageUrl = buildProfileImageDataUrl(req.file)
 
         user.profileImage = imageUrl
         await user.save()

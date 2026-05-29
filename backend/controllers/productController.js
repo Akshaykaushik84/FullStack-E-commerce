@@ -48,7 +48,7 @@ const buildProductPayload = (body = {}) => ({
 })
 
 const getUploadedImageUrl = (req) => (
-    req.file ? `${req.protocol}://${req.get("host")}/uploads/${path.basename(req.file.path)}` : ""
+    req.file ? `/uploads/${path.basename(req.file.path)}` : ""
 )
 
 const validateProductPayload = (payload) => {
@@ -202,7 +202,7 @@ exports.createProductReview = async (req, res) => {
         }
 
         const reviewImage = req.file
-            ? `${req.protocol}://${req.get("host")}/uploads/${path.basename(req.file.path)}`
+            ? `/uploads/${path.basename(req.file.path)}`
             : fallbackReviewImage
 
         const review = {

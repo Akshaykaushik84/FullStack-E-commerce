@@ -1,6 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CreditCard, MapPin, PackageCheck, ShieldCheck, TicketPercent } from "lucide-react";
+import { CreditCard, LocateFixed, MapPin, PackageCheck, ShieldCheck, TicketPercent } from "lucide-react";
 import Navbar from "../components/NavbarComp";
 import Footer from "../components/Footer";
 import CartItem from "../components/CartItem";
@@ -10,6 +10,7 @@ import { placeOrder } from "../api/orderApi.jsx";
 import { validateCoupon } from "../api/couponApi.jsx";
 import { getStoredToken } from "../utils/authStorage.js";
 import { isValidIndianPhone, isValidName, isValidPostalCode } from "../utils/formValidation.js";
+import { buildMapLink, getCurrentPosition } from "../utils/locationUtils.js";
 
 const initialCheckoutForm = {
   fullName: "",
@@ -20,6 +21,7 @@ const initialCheckoutForm = {
   postalCode: "",
   country: "India",
   paymentMethod: "Cash on Delivery",
+  location: {},
 };
 
 const formatPrice = (price) => `Rs ${Number(price || 0).toFixed(0)}`;
@@ -42,6 +44,7 @@ const Cart = () => {
   const [couponMessage, setCouponMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [fetchingLocation, setFetchingLocation] = useState(false);
   const { showError, showSuccess } = useToast();
 
   const discountAmount = couponData?.discountAmount || 0;
@@ -89,6 +92,24 @@ const Cart = () => {
   const handleCheckoutChange = (e) => {
     const { name, value } = e.target;
     setCheckoutForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleUseCurrentLocation = () => {
+    setFetchingLocation(true);
+
+    getCurrentPosition()
+      .then((location) => {
+        setCheckoutForm((prev) => ({
+          ...prev,
+          location: {
+            ...location,
+            mapUrl: buildMapLink(location.latitude, location.longitude),
+          },
+        }));
+        showSuccess("Delivery location captured.");
+      })
+      .catch((err) => showError(err.message || "Unable to get current location."))
+      .finally(() => setFetchingLocation(false));
   };
 
   const handleApplyCoupon = () => {
@@ -154,6 +175,7 @@ const Cart = () => {
           state: checkoutForm.state,
           postalCode: checkoutForm.postalCode,
           country: checkoutForm.country,
+          location: checkoutForm.location,
         },
         paymentMethod: checkoutForm.paymentMethod,
         couponCode: couponData?.code || couponCode,
@@ -249,6 +271,27 @@ const Cart = () => {
                     <p className="mt-2 min-h-5 text-xs text-slate-500">{selectedPaymentOption.helper}</p>
                   </div>
                   <textarea name="addressLine" value={checkoutForm.addressLine} onChange={handleCheckoutChange} placeholder="Full address" className="min-h-28 rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)] md:col-span-2" required minLength={8} maxLength={240} autoComplete="street-address" />
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 md:col-span-2">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="font-semibold text-slate-900">Delivery Location</p>
+                        <p className="mt-1 text-sm text-slate-500">
+                          {checkoutForm.location?.latitude && checkoutForm.location?.longitude
+                            ? `${checkoutForm.location.latitude}, ${checkoutForm.location.longitude}`
+                            : "Optional, but useful for delivery accuracy"}
+                        </p>
+                      </div>
+                      <button type="button" onClick={handleUseCurrentLocation} disabled={fetchingLocation} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60">
+                        <LocateFixed size={16} />
+                        {fetchingLocation ? "Getting..." : "Use current location"}
+                      </button>
+                    </div>
+                    {checkoutForm.location?.mapUrl ? (
+                      <a href={checkoutForm.location.mapUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex text-sm font-semibold text-[var(--brand-600)]">
+                        View selected location on map
+                      </a>
+                    ) : null}
+                  </div>
                 </div>
                 <button type="submit" disabled={submitting} className="mt-5 w-full rounded-2xl bg-[var(--brand-600)] px-5 py-3.5 text-sm font-semibold text-white shadow-lg shadow-blue-100 transition hover:bg-[var(--brand-700)] disabled:opacity-60">
                   {submitting ? "Placing order..." : "Place order"}

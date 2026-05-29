@@ -76,6 +76,25 @@ const validateShippingAddress = (shippingAddress = {}) => {
     return ""
 }
 
+const normalizeLocation = (location = {}) => {
+    const latitude = Number(location.latitude)
+    const longitude = Number(location.longitude)
+
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        return {
+            latitude: null,
+            longitude: null,
+            mapUrl: ""
+        }
+    }
+
+    return {
+        latitude,
+        longitude,
+        mapUrl: `https://www.google.com/maps?q=${latitude},${longitude}`
+    }
+}
+
 const normalizeShippingAddress = (shippingAddress = {}) => ({
     fullName: String(shippingAddress.fullName || "").trim(),
     phone: String(shippingAddress.phone || "").trim(),
@@ -83,7 +102,8 @@ const normalizeShippingAddress = (shippingAddress = {}) => ({
     city: String(shippingAddress.city || "").trim(),
     state: String(shippingAddress.state || "").trim(),
     postalCode: String(shippingAddress.postalCode || "").trim(),
-    country: String(shippingAddress.country || "India").trim() || "India"
+    country: String(shippingAddress.country || "India").trim() || "India",
+    location: normalizeLocation(shippingAddress.location)
 })
 
 const restockOrderItems = async (order) => {
@@ -407,6 +427,7 @@ const downloadInvoice = async (req, res) => {
               <p><strong>Order ID:</strong> ${order._id}</p>
               <p><strong>Status:</strong> ${order.status}</p>
               <p><strong>Date:</strong> ${new Date(order.createdAt).toLocaleString()}</p>
+              ${order.shippingAddress?.location?.mapUrl ? `<p><strong>Delivery Location:</strong> <a href="${order.shippingAddress.location.mapUrl}">${order.shippingAddress.location.mapUrl}</a></p>` : ""}
               <h2 style="margin-top:28px;">Items</h2>
               <table style="width:100%;border-collapse:collapse;">
                 <thead>

@@ -20,9 +20,20 @@ const colorVariants = [
 ]
 
 const buildUniqueProductImage = (category, templateName, tags, productIndex) => {
-    const label = encodeURIComponent(templateName)
+    const keywords = [
+        templateName,
+        category,
+        ...(tags || [])
+    ]
+        .join(" ")
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, " ")
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 5)
+        .join(",")
 
-    return `https://placehold.co/1200x900/f8fafc/0f172a/png?text=${label}`
+    return `https://loremflickr.com/900/900/${keywords}?lock=${productIndex + 5000}`
 }
 
 const categoryBlueprints = [
@@ -234,5 +245,4 @@ module.exports = {
     createCatalog,
     categoryBlueprints
 }
-
 

@@ -229,6 +229,16 @@ const Orders = () => {
                           {order.shippingAddress?.addressLine}, {order.shippingAddress?.city},{" "}
                           {order.shippingAddress?.state} - {order.shippingAddress?.postalCode}
                         </p>
+                        {order.shippingAddress?.location?.mapUrl ? (
+                          <a
+                            href={order.shippingAddress.location.mapUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mt-3 inline-flex text-sm font-semibold text-[var(--brand-600)]"
+                          >
+                            View delivery location
+                          </a>
+                        ) : null}
                         <div className="mt-4 border-t border-slate-200 pt-4 text-sm text-slate-600">
                           <p>Payment: {formatPaymentMethod(order.paymentMethod)}</p>
                           <p>Payment status: {order.paymentStatus}</p>

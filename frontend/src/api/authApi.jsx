@@ -24,5 +24,7 @@ export const getProfile = () => apiClient.get("/auth/profile", getAuthConfig());
 
 export const updateProfile = (userData) => apiClient.put("/auth/profile", userData, getAuthConfig());
 
+export const updateLocation = (locationData) => apiClient.patch("/auth/location", locationData, getAuthConfig());
+
 export const uploadProfileImage = (formData) =>
   apiClient.post("/auth/profile-image", formData, getMultipartConfig());

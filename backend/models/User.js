@@ -39,6 +39,14 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: ""
     },
+    location: {
+        latitude: { type: Number, default: null },
+        longitude: { type: Number, default: null },
+        mapUrl: { type: String, default: "" },
+        placeName: { type: String, default: "" },
+        accuracy: { type: Number, default: null },
+        updatedAt: { type: Date, default: null }
+    },
     password: {
         type: String,
         required: true,

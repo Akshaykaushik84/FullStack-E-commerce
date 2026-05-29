@@ -19,7 +19,12 @@ const orderSchema = new mongoose.Schema(
             city: { type: String, required: true, trim: true, minlength: 2, maxlength: 50 },
             state: { type: String, required: true, trim: true, minlength: 2, maxlength: 50 },
             postalCode: { type: String, required: true, trim: true, match: [/^\d{6}$/, "Please enter a valid postal code"] },
-            country: { type: String, default: "India" }
+            country: { type: String, default: "India" },
+            location: {
+                latitude: { type: Number, default: null },
+                longitude: { type: Number, default: null },
+                mapUrl: { type: String, default: "" }
+            }
         },
         paymentMethod: {
             type: String,

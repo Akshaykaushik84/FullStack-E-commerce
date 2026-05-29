@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Heart, ShoppingCart, Star } from "lucide-react";
 import { useParams } from "react-router-dom";
 import Navbar from "../components/NavbarComp";
@@ -11,6 +11,27 @@ import { getStoredToken } from "../utils/authStorage.js";
 import { isValidImageFile } from "../utils/formValidation.js";
 
 const formatPrice = (price) => `Rs ${Number(price || 0).toFixed(0)}`;
+const FALLBACK_IMAGE = "https://placehold.co/900x900/f8fafc/0f172a/png?text=Product";
+
+const resolveImageUrl = (image) => {
+  const rawImage = String(image || "").trim();
+
+  if (!rawImage) return FALLBACK_IMAGE;
+  if (rawImage.startsWith("/uploads")) return rawImage;
+  if (typeof window === "undefined") return rawImage;
+
+  try {
+    const imageUrl = new URL(rawImage, window.location.origin);
+
+    if (window.location.protocol === "https:" && imageUrl.protocol === "http:" && imageUrl.host === window.location.host) {
+      return `${window.location.origin}${imageUrl.pathname}`;
+    }
+
+    return imageUrl.href;
+  } catch {
+    return FALLBACK_IMAGE;
+  }
+};
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -18,8 +39,10 @@ const ProductDetails = () => {
   const [product, setProduct] = useState(null);
   const [wishlisted, setWishlisted] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [imageFailed, setImageFailed] = useState(false);
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: "", reviewImage: null });
   const { showError, showSuccess } = useToast();
+  const productImage = useMemo(() => resolveImageUrl(product?.image), [product?.image]);
 
   useEffect(() => {
     Promise.all([
@@ -124,11 +147,12 @@ const ProductDetails = () => {
       <Navbar />
       <div className="mx-auto max-w-7xl px-3 pb-28 pt-22 sm:px-5 sm:pt-28 lg:pb-16">
         <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr] lg:gap-8">
-          <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+          <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm">
             <img
-              src={product.image}
+              src={imageFailed ? FALLBACK_IMAGE : productImage}
               alt={product.name}
-              className="h-[240px] w-full object-cover sm:h-[420px] lg:h-full"
+              onError={() => setImageFailed(true)}
+              className="h-[260px] w-full object-contain sm:h-[430px] lg:h-full"
             />
           </div>
 
