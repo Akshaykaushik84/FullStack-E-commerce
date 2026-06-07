@@ -1,6 +1,7 @@
 ﻿const User = require("../models/User")
 const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
+const { touchUserSession } = require("../utils/sessionStatus")
 const JWT_SECRET = process.env.JWT_SECRET || "secretkey"
 
 const DEFAULT_PROFILE_IMAGE = "https://www.pngall.com/wp-content/uploads/5/Profile-Transparent.png"
@@ -490,6 +491,25 @@ exports.updateLocation = async (req, res) => {
         res.json({
             message: "Location updated successfully",
             user: buildAuthResponse(user).user
+        })
+    } catch (err) {
+        res.status(500).json({ message: err.message })
+    }
+}
+
+exports.heartbeat = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id)
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" })
+        }
+
+        await touchUserSession(user)
+
+        res.json({
+            message: "Session active",
+            lastSeenAt: user.lastSeenAt
         })
     } catch (err) {
         res.status(500).json({ message: err.message })

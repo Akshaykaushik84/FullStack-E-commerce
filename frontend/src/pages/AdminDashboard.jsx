@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronDown, ChevronUp, Pencil, PackageOpen, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, PackageOpen, Pencil, Trash2, X } from "lucide-react";
 import Navbar from "../components/NavbarComp";
 import Footer from "../components/Footer";
 import { useToast } from "../hooks/useToast.js";
@@ -9,6 +9,7 @@ import {
   getAdminCarts,
   getAdminStats,
   getAdminUserCart,
+  getAdminUserDetails,
   getAdminUsers,
   getSalesReport,
 } from "../api/adminApi.jsx";
@@ -50,6 +51,8 @@ const emptyCouponForm = {
   isActive: true,
 };
 
+const DEFAULT_PROFILE_IMAGE = "https://www.pngall.com/wp-content/uploads/5/Profile-Transparent.png";
+
 const saveBlob = (blob, fileName) => {
   const url = window.URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -61,12 +64,16 @@ const saveBlob = (blob, fileName) => {
   window.URL.revokeObjectURL(url);
 };
 
-const StatCard = ({ label, value, details }) => (
-  <div className="rounded-[2rem] border border-slate-100 bg-white p-5 shadow-xl sm:p-6">
+const StatCard = ({ label, value, details, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="rounded-[2rem] border border-slate-100 bg-white p-5 text-left shadow-xl transition hover:-translate-y-1 hover:border-[var(--brand-200)] sm:p-6"
+  >
     <p className="text-sm font-medium text-slate-500">{label}</p>
     <p className="mt-3 text-3xl font-bold text-slate-900">{value}</p>
     <p className="mt-3 text-sm text-slate-500">{details}</p>
-  </div>
+  </button>
 );
 
 const ChartCard = ({ title, data, color = "bg-[var(--brand-600)]" }) => {
@@ -106,6 +113,35 @@ const SectionTitle = ({ eyebrow, title, description }) => (
     </p>
     <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">{title}</h2>
     <p className="mt-2 text-slate-600">{description}</p>
+  </div>
+);
+
+const AdminModal = ({ title, description, children, onClose }) => (
+  <div className="fixed inset-0 z-[80] bg-slate-950/60 px-3 py-4 backdrop-blur-sm sm:px-6">
+    <div className="mx-auto flex max-h-[92vh] max-w-6xl flex-col overflow-hidden rounded-[2rem] bg-white shadow-2xl">
+      <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 sm:px-7 sm:py-5">
+        <div>
+          <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">{title}</h2>
+          {description ? <p className="mt-1 text-sm text-slate-500">{description}</p> : null}
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700 transition hover:bg-slate-200"
+          aria-label="Close modal"
+        >
+          <X size={18} />
+        </button>
+      </div>
+      <div className="overflow-auto px-4 py-5 sm:px-7">{children}</div>
+    </div>
+  </div>
+);
+
+const DetailTile = ({ label, value }) => (
+  <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+    <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{label}</p>
+    <p className="mt-2 break-words text-sm font-semibold text-slate-900">{value ?? "Not added"}</p>
   </div>
 );
 
@@ -154,6 +190,9 @@ const AdminDashboard = () => {
   const [showSalesRows, setShowSalesRows] = useState(false);
   const [showOrders, setShowOrders] = useState(false);
   const [productSearch, setProductSearch] = useState("");
+  const [activeModal, setActiveModal] = useState("");
+  const [selectedUserDetails, setSelectedUserDetails] = useState(null);
+  const [userDetailsLoading, setUserDetailsLoading] = useState(false);
   const { showError, showSuccess } = useToast();
 
   const productPreviewUrl = useMemo(
@@ -492,6 +531,9 @@ const AdminDashboard = () => {
         if (selectedCart?.user?._id === userId) {
           setSelectedCart(null);
         }
+        if (selectedUserDetails?.user?._id === userId) {
+          closeAdminModal();
+        }
         showSuccess("User deleted successfully.");
         refreshAdminData();
       })
@@ -502,9 +544,26 @@ const AdminDashboard = () => {
     getAdminUserCart(userId, token)
       .then((res) => {
         setSelectedCart(res.data);
+        setActiveModal("carts");
         showSuccess("Cart loaded successfully.");
       })
       .catch((err) => showError(err.response?.data?.message || "Cart not found for this user"));
+  };
+
+  const closeAdminModal = () => {
+    setActiveModal("");
+    setSelectedUserDetails(null);
+  };
+
+  const handleUserDetails = (account) => {
+    setActiveModal("userDetails");
+    setSelectedUserDetails({ user: account, cart: null, orders: [], stats: {} });
+    setUserDetailsLoading(true);
+
+    getAdminUserDetails(account._id, token)
+      .then((res) => setSelectedUserDetails(res.data))
+      .catch((err) => showError(err.response?.data?.message || "Unable to load user details"))
+      .finally(() => setUserDetailsLoading(false));
   };
 
   const handleExportSales = () => {
@@ -524,6 +583,342 @@ const AdminDashboard = () => {
       })
       .catch((err) => showError(err.response?.data?.message || "Unable to download invoice"));
   };
+
+  const formatDateTime = (value) => (value ? new Date(value).toLocaleString() : "Not available");
+
+  const renderProductsModal = () => (
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-3 sm:flex-row sm:items-center">
+        <input
+          value={productSearch}
+          onChange={(e) => setProductSearch(e.target.value)}
+          placeholder="Search products by name, category, or brand"
+          className="min-h-11 flex-1 rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-[var(--brand-500)]"
+        />
+        <span className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-600">
+          {filteredProducts.length} products
+        </span>
+      </div>
+      <div className="max-h-[65vh] overflow-auto rounded-2xl border border-slate-100 bg-white">
+        <table className="min-w-[760px] text-left text-sm">
+          <thead className="sticky top-0 z-10 bg-slate-50 text-xs uppercase tracking-[0.18em] text-slate-500">
+            <tr>
+              <th className="px-4 py-3">Product</th>
+              <th className="px-4 py-3">Category</th>
+              <th className="px-4 py-3">Price</th>
+              <th className="px-4 py-3">Stock</th>
+              <th className="px-4 py-3 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {filteredProducts.map((product) => (
+              <tr key={product._id} className="hover:bg-slate-50">
+                <td className="px-4 py-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <img src={product.image} alt={product.name} className="h-12 w-12 rounded-xl object-cover" />
+                    <div className="min-w-0">
+                      <p className="max-w-[280px] truncate font-semibold text-slate-900">{product.name}</p>
+                      <p className="truncate text-xs text-slate-500">{product.brand || "Store Select"}</p>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-4 py-3 text-slate-600">{product.category || "General"}</td>
+                <td className="px-4 py-3 font-semibold text-slate-900">Rs {Number(product.price || 0).toFixed(0)}</td>
+                <td className="px-4 py-3">
+                  <span className={`rounded-full px-3 py-1 text-xs font-semibold ${Number(product.countInStock || 0) <= 5 ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"}`}>
+                    {product.countInStock || 0}
+                  </span>
+                </td>
+                <td className="px-4 py-3">
+                  <div className="flex justify-end gap-2">
+                    <button type="button" onClick={() => { closeAdminModal(); startEditProduct(product); }} className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white">
+                      Edit
+                    </button>
+                    <button type="button" onClick={() => handleDeleteProduct(product._id)} className="rounded-xl bg-rose-500 px-3 py-2 text-xs font-semibold text-white">
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  const renderUsersModal = () => (
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <input
+          value={userSearch}
+          onChange={(e) => setUserSearch(e.target.value)}
+          placeholder="Search users"
+          className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-[var(--brand-500)]"
+        />
+        <button type="button" onClick={() => { setUserPage(1); refreshAdminData(); }} className="rounded-2xl bg-[var(--brand-600)] px-4 py-3 text-sm font-semibold text-white">
+          Search
+        </button>
+      </div>
+      <div className="grid max-h-[65vh] gap-3 overflow-auto pr-1 md:grid-cols-2">
+        {users.map((account) => (
+          <button
+            key={account._id}
+            type="button"
+            onClick={() => handleUserDetails(account)}
+            className="flex gap-4 rounded-3xl border border-slate-100 bg-slate-50 p-4 text-left transition hover:border-[var(--brand-200)] hover:bg-white"
+          >
+            <img src={account.profileImage || DEFAULT_PROFILE_IMAGE} alt={account.name} className="h-16 w-16 shrink-0 rounded-2xl object-cover" />
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="font-semibold text-slate-900">{account.name}</p>
+                <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${account.isSessionActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
+                  {account.isSessionActive ? "Active" : "Offline"}
+                </span>
+              </div>
+              <p className="break-all text-sm text-slate-500">{account.email}</p>
+              <p className="mt-2 text-xs text-slate-500">Joined: {formatDateTime(account.createdAt)}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <span className="rounded-xl bg-white px-3 py-1.5 text-xs font-semibold text-slate-600">Click for details</span>
+              </div>
+            </div>
+          </button>
+        ))}
+      </div>
+      <div className="flex flex-wrap items-center justify-end gap-3">
+        <button type="button" disabled={userPagination.page <= 1} onClick={() => setUserPage((prev) => Math.max(prev - 1, 1))} className="rounded-2xl border border-slate-200 px-4 py-2 text-sm disabled:opacity-50">
+          Previous
+        </button>
+        <span className="text-sm text-slate-500">Page {userPagination.page || 1} of {userPagination.totalPages || 1}</span>
+        <button type="button" disabled={userPagination.page >= userPagination.totalPages} onClick={() => setUserPage((prev) => prev + 1)} className="rounded-2xl border border-slate-200 px-4 py-2 text-sm disabled:opacity-50">
+          Next
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderUserDetailsModal = () => {
+    const account = selectedUserDetails?.user;
+    const cart = selectedUserDetails?.cart;
+    const ordersForUser = selectedUserDetails?.orders || [];
+
+    if (userDetailsLoading && !account) {
+      return <p className="text-slate-500">Loading user details...</p>;
+    }
+
+    if (!account) {
+      return <p className="text-slate-500">User details are not available.</p>;
+    }
+
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col gap-5 rounded-[2rem] bg-slate-900 p-5 text-white sm:flex-row sm:items-center">
+          <img src={account.profileImage || DEFAULT_PROFILE_IMAGE} alt={account.name} className="h-28 w-28 rounded-[2rem] border-4 border-white/10 object-cover" />
+          <div className="min-w-0">
+            <p className="text-sm uppercase tracking-[0.25em] text-cyan-200">Customer Profile</p>
+            <h3 className="mt-2 text-2xl font-bold">{account.name}</h3>
+            <p className="break-all text-slate-300">{account.email}</p>
+            <p className="mt-2 text-sm text-slate-300">{account.isSessionActive ? "Active session" : "Offline"}</p>
+          </div>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-3">
+          <DetailTile label="Phone" value={account.phone} />
+          <DetailTile label="Date of Birth" value={account.dob} />
+          <DetailTile label="Joined" value={formatDateTime(account.createdAt)} />
+          <DetailTile label="Current Address" value={account.address} />
+          <DetailTile label="Permanent Address" value={account.permanentAddress} />
+          <DetailTile label="Last Seen" value={formatDateTime(account.lastSeenAt)} />
+          <DetailTile label="Last Login" value={formatDateTime(account.lastLoginAt)} />
+          <DetailTile label="Wishlist Items" value={Array.isArray(account.wishlist) ? account.wishlist.length : 0} />
+          <DetailTile label="Total Spent" value={`Rs ${Number(selectedUserDetails?.stats?.totalSpent || 0).toFixed(0)}`} />
+        </div>
+
+        {account.location?.mapUrl ? (
+          <a href={account.location.mapUrl} target="_blank" rel="noreferrer" className="inline-flex rounded-2xl bg-[var(--brand-600)] px-4 py-3 text-sm font-semibold text-white">
+            View saved location: {account.location.placeName || "Map"}
+          </a>
+        ) : null}
+
+        <div className="grid gap-5 lg:grid-cols-2">
+          <div className="rounded-[2rem] border border-slate-100 bg-slate-50 p-4">
+            <h4 className="text-lg font-bold text-slate-900">Cart</h4>
+            {(cart?.products || []).length ? (
+              <div className="mt-4 max-h-72 space-y-3 overflow-auto">
+                {cart.products.map((item) => (
+                  <div key={item._id} className="flex gap-3 rounded-2xl bg-white p-3">
+                    <img src={item.product?.image} alt={item.product?.name} className="h-14 w-14 rounded-xl object-cover" />
+                    <div>
+                      <p className="font-semibold text-slate-900">{item.product?.name}</p>
+                      <p className="text-sm text-slate-500">Qty: {item.quantity}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-slate-500">No cart items.</p>
+            )}
+          </div>
+
+          <div className="rounded-[2rem] border border-slate-100 bg-slate-50 p-4">
+            <h4 className="text-lg font-bold text-slate-900">Recent Orders</h4>
+            {ordersForUser.length ? (
+              <div className="mt-4 max-h-72 space-y-3 overflow-auto">
+                {ordersForUser.map((order) => (
+                  <div key={order._id} className="rounded-2xl bg-white p-3">
+                    <p className="break-all text-sm font-semibold text-slate-900">{order.invoiceNumber || order._id}</p>
+                    <div className="mt-2 flex flex-wrap justify-between gap-2 text-sm">
+                      <span className="text-[var(--brand-600)]">{order.status}</span>
+                      <span className="font-semibold text-slate-900">Rs {Number(order.totalPrice || 0).toFixed(0)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-slate-500">No orders yet.</p>
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-3">
+          <button type="button" onClick={() => handleViewCart(account._id)} className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700">
+            Open Cart Center
+          </button>
+          <button type="button" onClick={() => handleDeleteUser(account._id)} className="rounded-2xl bg-rose-500 px-4 py-3 text-sm font-semibold text-white">
+            Delete User
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderCartsModal = () => (
+    <div className="grid gap-5 lg:grid-cols-[1fr_1.1fr]">
+      <div className="rounded-[2rem] border border-slate-100 bg-slate-50 p-4">
+        <h3 className="text-xl font-bold text-slate-900">All Carts</h3>
+        <div className="mt-4 max-h-[62vh] space-y-3 overflow-auto pr-1">
+          {carts.map((cart) => (
+            <button key={cart._id} className="w-full rounded-2xl border border-slate-100 bg-white p-4 text-left hover:border-[var(--brand-100)]" onClick={() => setSelectedCart(cart)}>
+              <p className="font-semibold text-slate-900">{cart.user?.name || "Unknown User"}</p>
+              <p className="break-all text-sm text-slate-500">{cart.user?.email || "No email"} | {(cart.products || []).length} items</p>
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="rounded-[2rem] border border-slate-100 bg-slate-50 p-4">
+        <h3 className="text-xl font-bold text-slate-900">Selected Cart</h3>
+        {selectedCart ? (
+          <div className="mt-4 space-y-3">
+            <p className="break-all rounded-2xl bg-white p-4 font-semibold text-slate-900">
+              {selectedCart.user?.name} ({selectedCart.user?.email})
+            </p>
+            {(selectedCart.products || []).length ? selectedCart.products.map((item) => (
+              <div key={item._id} className="flex items-center gap-4 rounded-2xl bg-white p-4">
+                <img src={item.product?.image} alt={item.product?.name} className="h-16 w-16 rounded-2xl object-cover" />
+                <div>
+                  <p className="font-semibold text-slate-900">{item.product?.name}</p>
+                  <p className="text-slate-500">Qty: {item.quantity}</p>
+                </div>
+              </div>
+            )) : <p className="text-slate-500">This cart is empty.</p>}
+          </div>
+        ) : (
+          <p className="mt-4 text-slate-500">Choose a user cart from the left.</p>
+        )}
+      </div>
+    </div>
+  );
+
+  const renderReviewsModal = () => (
+    <div className="grid max-h-[70vh] gap-4 overflow-auto pr-1 sm:grid-cols-2 lg:grid-cols-3">
+      {reviewsWithPhotos.length ? reviewsWithPhotos.map((review) => (
+        <div key={review._id} className="rounded-3xl border border-slate-100 bg-slate-50 p-4">
+          <img src={review.image} alt={review.productName} className="h-40 w-full rounded-2xl object-cover" />
+          <p className="mt-3 font-semibold text-slate-900">{review.productName}</p>
+          <p className="mt-1 text-sm text-slate-500">{review.name} | {review.email || "No email"} | {review.rating}/5</p>
+          <p className="mt-2 text-sm text-slate-600">{review.comment}</p>
+        </div>
+      )) : <p className="text-slate-500">No photo reviews uploaded yet.</p>}
+    </div>
+  );
+
+  const renderSalesModal = () => (
+    <div className="max-h-[70vh] overflow-auto rounded-2xl border border-slate-100 bg-white">
+      <table className="min-w-[760px] text-sm">
+        <thead className="sticky top-0 bg-slate-50 text-left text-slate-600">
+          <tr>
+            <th className="px-4 py-3">Invoice</th>
+            <th className="px-4 py-3">Customer</th>
+            <th className="px-4 py-3">Email</th>
+            <th className="px-4 py-3">Status</th>
+            <th className="px-4 py-3">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {(salesReport.rows || []).map((row) => (
+            <tr key={row.orderId} className="border-t border-slate-100">
+              <td className="px-4 py-3">{row.invoiceNumber || "-"}</td>
+              <td className="px-4 py-3">{row.customerName}</td>
+              <td className="px-4 py-3">{row.customerEmail || "-"}</td>
+              <td className="px-4 py-3">{row.status}</td>
+              <td className="px-4 py-3 font-semibold">Rs {Number(row.totalPrice || 0).toFixed(0)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  const renderOrdersModal = () => (
+    <div className="max-h-[70vh] space-y-4 overflow-auto pr-1">
+      {orders.map((order) => (
+        <div key={order._id} className="rounded-3xl border border-slate-100 bg-slate-50 p-5">
+          <div className="mb-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+            <DetailTile label="Order ID" value={order._id} />
+            <DetailTile label="Customer" value={`${order.user?.name || "Customer"} (${order.user?.email || "No email"})`} />
+            <DetailTile label="Status" value={order.status} />
+            <DetailTile label="Invoice" value={order.invoiceNumber || "Pending"} />
+            <DetailTile label="Total" value={`Rs ${Number(order.totalPrice || 0).toFixed(0)}`} />
+          </div>
+          {order.shippingAddress?.location?.mapUrl ? (
+            <a href={order.shippingAddress.location.mapUrl} target="_blank" rel="noreferrer" className="mb-4 inline-flex rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-[var(--brand-600)]">
+              View delivery location
+            </a>
+          ) : null}
+          <div className="grid gap-2 sm:flex sm:flex-wrap sm:gap-3">
+            {["Approved", "Shipped", "Delivered", "Cancelled", "Return Requested", "Returned"].map((status) => (
+              <button key={status} className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white" onClick={() => handleOrderStatus(order._id, status)}>
+                Mark {status}
+              </button>
+            ))}
+            <button className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700" onClick={() => handleInvoiceDownload(order)}>
+              Download Invoice
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  const modalMeta = {
+    products: ["Products", "Search, update, and delete product records."],
+    users: ["Users", "Click any user to see complete profile and activity details."],
+    userDetails: ["User Details", "Full customer profile, cart, and recent order data."],
+    carts: ["Cart Center", "Inspect all carts and selected customer cart items."],
+    reviews: ["Review Photos", "All product reviews that include uploaded images."],
+    sales: ["Sales Report", "Detailed order-level sales data."],
+    orders: ["Orders", "Manage fulfillment, returns, cancellations, and invoices."]
+  };
+
+  const renderActiveModal = () => ({
+    products: renderProductsModal,
+    users: renderUsersModal,
+    userDetails: renderUserDetailsModal,
+    carts: renderCartsModal,
+    reviews: renderReviewsModal,
+    sales: renderSalesModal,
+    orders: renderOrdersModal
+  }[activeModal]?.() || null);
 
   if (user?.role !== "admin") {
     return (
@@ -550,12 +945,12 @@ const AdminDashboard = () => {
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
-          <StatCard label="Products" value={stats.productsCount || 0} details="Live product inventory" />
-          <StatCard label="Users" value={stats.usersCount || 0} details="Registered customer accounts" />
-          <StatCard label="Active Sessions" value={stats.activeSessions || 0} details="Users currently active" />
-          <StatCard label="Orders" value={stats.ordersCount || 0} details="Tracked customer orders" />
-          <StatCard label="Low Stock" value={stats.lowStockProducts || 0} details="Products needing restock" />
-          <StatCard label="Revenue" value={`Rs ${Number(stats.revenue || 0).toFixed(0)}`} details="Current total sales" />
+          <StatCard label="Products" value={stats.productsCount || 0} details="Live product inventory" onClick={() => setActiveModal("products")} />
+          <StatCard label="Users" value={stats.usersCount || 0} details="Registered customer accounts" onClick={() => setActiveModal("users")} />
+          <StatCard label="Active Sessions" value={stats.activeSessions || 0} details="Users currently active" onClick={() => setActiveModal("users")} />
+          <StatCard label="Orders" value={stats.ordersCount || 0} details="Tracked customer orders" onClick={() => setActiveModal("orders")} />
+          <StatCard label="Low Stock" value={stats.lowStockProducts || 0} details="Products needing restock" onClick={() => setActiveModal("products")} />
+          <StatCard label="Revenue" value={`Rs ${Number(stats.revenue || 0).toFixed(0)}`} details="Current total sales" onClick={() => setActiveModal("sales")} />
         </div>
 
         {adminNotice ? (
@@ -654,11 +1049,11 @@ const AdminDashboard = () => {
               </div>
               <button
                 type="button"
-                onClick={() => setShowProducts((value) => !value)}
+                onClick={() => { setShowProducts(false); setActiveModal("products"); }}
                 className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-200 transition hover:bg-slate-800"
               >
                 <PackageOpen size={17} />
-                {showProducts ? "Hide Products" : "Show Products"}
+                Open Products
                 {showProducts ? <ChevronUp size={17} /> : <ChevronDown size={17} />}
               </button>
             </div>
@@ -873,8 +1268,8 @@ const AdminDashboard = () => {
                 <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">Users</h2>
                 <p className="mt-2 text-slate-600">Review customer accounts, active sessions, and cart access.</p>
               </div>
-              <button type="button" onClick={() => setShowUsers((value) => !value)} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white">
-                {showUsers ? "Hide Users" : "Show Users"}
+              <button type="button" onClick={() => { setShowUsers(false); setActiveModal("users"); }} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white">
+                Open Users
                 {showUsers ? <ChevronUp size={17} /> : <ChevronDown size={17} />}
               </button>
             </div>
@@ -940,8 +1335,8 @@ const AdminDashboard = () => {
                   <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">Cart Center</h2>
                   <p className="mt-2 text-slate-600">Inspect selected carts and all stored cart records.</p>
                 </div>
-                <button type="button" onClick={() => setShowCarts((value) => !value)} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white">
-                  {showCarts ? "Hide Carts" : "Show Carts"}
+                <button type="button" onClick={() => { setShowCarts(false); setActiveModal("carts"); }} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white">
+                  Open Carts
                   {showCarts ? <ChevronUp size={17} /> : <ChevronDown size={17} />}
                 </button>
               </div>
@@ -1014,8 +1409,8 @@ const AdminDashboard = () => {
                 <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">Review Photos</h2>
                 <p className="mt-2 text-slate-600">Customer reviews that include uploaded images.</p>
               </div>
-              <button type="button" onClick={() => setShowReviews((value) => !value)} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white">
-                {showReviews ? "Hide Reviews" : "Show Reviews"}
+              <button type="button" onClick={() => { setShowReviews(false); setActiveModal("reviews"); }} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white">
+                Open Reviews
                 {showReviews ? <ChevronUp size={17} /> : <ChevronDown size={17} />}
               </button>
             </div>
@@ -1063,8 +1458,8 @@ const AdminDashboard = () => {
               <button onClick={handleExportSales} className="rounded-2xl bg-[var(--brand-600)] px-5 py-3 text-sm font-semibold text-white">
                 Export CSV
               </button>
-              <button type="button" onClick={() => setShowSalesRows((value) => !value)} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white">
-                {showSalesRows ? "Hide Table" : "Show Table"}
+              <button type="button" onClick={() => { setShowSalesRows(false); setActiveModal("sales"); }} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white">
+                Open Table
                 {showSalesRows ? <ChevronUp size={17} /> : <ChevronDown size={17} />}
               </button>
             </div>
@@ -1122,8 +1517,8 @@ const AdminDashboard = () => {
               <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">Orders</h2>
               <p className="mt-2 text-slate-600">Approve, ship, deliver, cancel, return, and download order invoices.</p>
             </div>
-            <button type="button" onClick={() => setShowOrders((value) => !value)} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white">
-              {showOrders ? "Hide Orders" : "Show Orders"}
+            <button type="button" onClick={() => { setShowOrders(false); setActiveModal("orders"); }} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white">
+              Open Orders
               {showOrders ? <ChevronUp size={17} /> : <ChevronDown size={17} />}
             </button>
           </div>
@@ -1189,6 +1584,15 @@ const AdminDashboard = () => {
           </div>
         </div>
       </div>
+      {activeModal ? (
+        <AdminModal
+          title={modalMeta[activeModal]?.[0] || "Admin Details"}
+          description={modalMeta[activeModal]?.[1] || ""}
+          onClose={closeAdminModal}
+        >
+          {renderActiveModal()}
+        </AdminModal>
+      ) : null}
       <Footer />
     </div>
   );

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, Search, Sparkles } from "lucide-react";
+import { createElement, useEffect, useMemo, useState } from "react";
+import { ArrowRight, BadgePercent, Search, ShieldCheck, Sparkles, Truck } from "lucide-react";
 import Navbar from "../components/NavbarComp";
 import Sidebar from "../components/sidebar";
 import ProductCard from "../components/ProductCard";
@@ -33,9 +33,30 @@ const heroSlides = [
   },
 ];
 
+const featureCards = [
+  {
+    title: "Secure Payment",
+    description: "Protected checkout with safer account-based order handling.",
+    icon: ShieldCheck,
+    tone: "from-emerald-500 to-teal-500",
+  },
+  {
+    title: "Best Offers",
+    description: "Fresh discounts, featured picks, and coupon-ready deals.",
+    icon: BadgePercent,
+    tone: "from-amber-500 to-orange-500",
+  },
+  {
+    title: "Fast Delivery",
+    description: "Smooth delivery flow with saved address and live location support.",
+    icon: Truck,
+    tone: "from-blue-500 to-indigo-500",
+  },
+];
+
 const initialFilters = {
   page: 1,
-  limit: 12,
+  limit: 20,
   search: "",
   category: "All",
   sort: "latest",
@@ -164,7 +185,7 @@ const Home = () => {
           </div>
         </section>
 
-        <section className="mt-5 grid gap-4 sm:mt-8 lg:mt-10 lg:grid-cols-[260px_1fr] lg:gap-6 xl:grid-cols-[280px_1fr]">
+        <section className="mt-5 grid gap-4 sm:mt-8 lg:mt-10 lg:grid-cols-[260px_1fr] lg:items-stretch lg:gap-6 xl:grid-cols-[280px_1fr]">
           <Sidebar
             categories={categories}
             selectedCategory={filters.category}
@@ -240,21 +261,42 @@ const Home = () => {
               </div>
             ) : products.length ? (
               <>
-                <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-                  {products.map((product) => (
-                    <ProductCard
-                      key={product._id}
-                      product={product}
-                      onAdded={setNotice}
-                      onWishlistChanged={(items) =>
-                        setWishlistIds(items.map((item) => item._id))
-                      }
-                      isWishlisted={wishlistIds.includes(product._id)}
-                    />
-                  ))}
+                <div className="space-y-4 sm:space-y-5">
+                  <div className="grid gap-2 sm:gap-3 md:grid-cols-3">
+                    {featureCards.map(({ title, description, icon, tone }) => (
+                      <div key={title} className="group relative overflow-hidden rounded-[1.25rem] border border-white bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg sm:rounded-[1.5rem] sm:p-4">
+                        <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${tone}`} />
+                        <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${tone} text-white shadow-lg`}>
+                          {createElement(icon, { size: 19 })}
+                        </div>
+                        <h3 className="mt-3 text-base font-bold text-slate-900">{title}</h3>
+                        <p className="mt-1.5 text-xs leading-5 text-slate-500 sm:text-sm">{description}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="grid auto-rows-fr grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+                    {products.map((product) => (
+                      <ProductCard
+                        key={product._id}
+                        product={product}
+                        onAdded={setNotice}
+                        onWishlistChanged={(items) =>
+                          setWishlistIds(items.map((item) => item._id))
+                        }
+                        isWishlisted={wishlistIds.includes(product._id)}
+                      />
+                    ))}
+                  </div>
                 </div>
 
-                <div className="rounded-[2rem] border border-slate-200 bg-white px-5 py-5 shadow-sm">
+                <div className="rounded-[1.5rem] border border-slate-200 bg-white px-3 py-4 shadow-sm sm:rounded-[2rem] sm:px-5 sm:py-5">
+                  <div className="mb-4 flex flex-col gap-1 text-center sm:mb-5">
+                    <p className="text-sm font-semibold text-slate-900">More products</p>
+                    <p className="text-xs text-slate-500">
+                      Page {pagination.page || 1} of {pagination.totalPages || 1}
+                    </p>
+                  </div>
                   <Pagination
                     currentPage={pagination.page || 1}
                     totalPages={pagination.totalPages || 1}

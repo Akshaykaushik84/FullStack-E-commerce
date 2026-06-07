@@ -9,6 +9,7 @@ const {
     getProfile,
     updateProfile,
     updateLocation,
+    heartbeat,
     uploadProfileImage
 } = require("../controllers/authController")
 const authMiddleware = require("../middleware/authMiddleware")
@@ -33,6 +34,7 @@ router.post("/logout", authMiddleware, logout)
 router.get("/profile", authMiddleware, getProfile)
 router.put("/profile", authMiddleware, updateProfile)
 router.patch("/location", authMiddleware, updateLocation)
+router.post("/heartbeat", authMiddleware, heartbeat)
 router.post("/profile-image", authMiddleware, upload.single("profileImage"), uploadProfileImage)
 
 module.exports = router

@@ -17,6 +17,7 @@ import Orders from "./pages/Orders";
 import ProductDetails from "./pages/ProductDetails";
 import Wishlist from "./pages/Wishlist";
 import LocationTracker from "./components/LocationTracker";
+import SessionHeartbeat from "./components/SessionHeartbeat";
 import { ToastProvider } from "./components/ToastProvider";
 import { forceClearCurrentTabAuth, getActiveAuthOwner, getTabId, releaseAuthTab } from "./utils/authSession";
 import { getStoredToken, getStoredUser } from "./utils/authStorage";
@@ -100,6 +101,7 @@ const AuthTabGuard = () => {
 
   return (
     <>
+      <SessionHeartbeat watchKey={locationWatchKey} />
       <LocationTracker watchKey={locationWatchKey} />
       <Routes>
         <Route path="/" element={<Home />} />

@@ -10,6 +10,9 @@ export const getAdminStats = (token) => apiClient.get("/admin/stats", getAdminCo
 export const getAdminUsers = (token, params = {}) =>
   apiClient.get("/admin/users", getAdminConfig(token, params));
 
+export const getAdminUserDetails = (userId, token) =>
+  apiClient.get(`/admin/users/${userId}`, getAdminConfig(token));
+
 export const deleteAdminUser = (userId, token) =>
   apiClient.delete(`/admin/users/${userId}`, getAdminConfig(token));
 

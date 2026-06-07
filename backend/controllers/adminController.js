@@ -5,6 +5,7 @@ const Product = require("../models/Product")
 const User = require("../models/User")
 const { seedDefaultCoupons } = require("./couponController")
 const { STATUS_FLOW, syncOrderStatuses } = require("../utils/orderStatus")
+const { getSessionCutoffDate, markExpiredSessionsOffline } = require("../utils/sessionStatus")
 
 const getActiveProductQuery = () => ({
     $or: [
@@ -15,11 +16,13 @@ const getActiveProductQuery = () => ({
 
 const getDashboardStats = async (req, res) => {
     try {
+        await markExpiredSessionsOffline(User)
+
         const activeProductQuery = getActiveProductQuery()
         const [productsCount, usersCount, activeSessions, orders, lowStockProducts] = await Promise.all([
             Product.countDocuments(activeProductQuery),
             User.countDocuments({ role: "user" }),
-            User.countDocuments({ role: "user", isSessionActive: true }),
+            User.countDocuments({ role: "user", isSessionActive: true, lastSeenAt: { $gte: getSessionCutoffDate() } }),
             Order.find().populate("products.product"),
             Product.countDocuments({
                 ...activeProductQuery,
@@ -192,6 +195,8 @@ const exportSalesReport = async (_req, res) => {
 
 const getUsers = async (req, res) => {
     try {
+        await markExpiredSessionsOffline(User)
+
         const page = Math.max(Number(req.query.page || 1), 1)
         const limit = Math.min(Math.max(Number(req.query.limit || 10), 1), 50)
         const skip = (page - 1) * limit
@@ -222,6 +227,39 @@ const getUsers = async (req, res) => {
                 limit,
                 totalUsers,
                 totalPages: Math.max(Math.ceil(totalUsers / limit), 1)
+            }
+        })
+    } catch (err) {
+        res.status(500).json({ message: err.message })
+    }
+}
+
+const getUserDetails = async (req, res) => {
+    try {
+        await markExpiredSessionsOffline(User)
+
+        const user = await User.findById(req.params.id).select("-password")
+
+        if (!user || user.role === "admin") {
+            return res.status(404).json({ message: "User not found" })
+        }
+
+        const [cart, orders] = await Promise.all([
+            Cart.findOne({ user: user._id }).populate("products.product"),
+            Order.find({ user: user._id })
+                .sort({ createdAt: -1 })
+                .limit(10)
+                .populate("products.product", "name image price category")
+        ])
+
+        res.json({
+            user,
+            cart,
+            orders,
+            stats: {
+                cartItems: (cart?.products || []).reduce((sum, item) => sum + Number(item.quantity || 0), 0),
+                ordersCount: orders.length,
+                totalSpent: orders.reduce((sum, order) => sum + Number(order.totalPrice || 0), 0)
             }
         })
     } catch (err) {
@@ -317,6 +355,7 @@ module.exports = {
     getSalesReport,
     exportSalesReport,
     getUsers,
+    getUserDetails,
     deleteUser,
     getAllCarts,
     getUserCartById,

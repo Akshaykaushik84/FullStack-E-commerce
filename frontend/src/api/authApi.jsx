@@ -20,6 +20,8 @@ export const forgotPassword = (userData) => apiClient.post("/auth/forgot-passwor
 
 export const logoutUser = () => apiClient.post("/auth/logout", {}, getAuthConfig());
 
+export const sendHeartbeat = () => apiClient.post("/auth/heartbeat", {}, getAuthConfig());
+
 export const getProfile = () => apiClient.get("/auth/profile", getAuthConfig());
 
 export const updateProfile = (userData) => apiClient.put("/auth/profile", userData, getAuthConfig());

@@ -7,6 +7,7 @@ const {
     getSalesReport,
     exportSalesReport,
     getUsers,
+    getUserDetails,
     deleteUser,
     getAllCarts,
     getUserCartById
@@ -18,6 +19,7 @@ router.get("/stats", getDashboardStats)
 router.get("/sales-report", getSalesReport)
 router.get("/sales-report/export", exportSalesReport)
 router.get("/users", getUsers)
+router.get("/users/:id", getUserDetails)
 router.delete("/users/:id", deleteUser)
 router.get("/carts", getAllCarts)
 router.get("/carts/:userId", getUserCartById)

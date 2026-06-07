@@ -1,6 +1,6 @@
 const Sidebar = ({ categories = [], selectedCategory = "All", onCategoryChange }) => {
   return (
-    <aside className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:sticky lg:top-28">
+    <aside className="h-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:sticky lg:top-28 lg:self-stretch">
       <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-3 py-3 sm:px-5 sm:py-4 lg:block lg:border-b-0 lg:pb-2">
         <div>
           <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--brand-500)] sm:text-xs sm:tracking-[0.3em]">
@@ -15,7 +15,7 @@ const Sidebar = ({ categories = [], selectedCategory = "All", onCategoryChange }
         </span>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto px-3 py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-5 lg:max-h-[34rem] lg:flex-col lg:gap-3 lg:overflow-y-auto lg:overflow-x-hidden lg:pt-2">
+      <div className="flex gap-2 overflow-x-auto px-3 py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-5 lg:max-h-none lg:flex-col lg:gap-3 lg:overflow-y-auto lg:overflow-x-hidden lg:pt-2">
         {categories.map((category) => {
           const isActive = category === selectedCategory;
 

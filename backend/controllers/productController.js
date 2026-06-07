@@ -102,7 +102,7 @@ exports.createProduct = async (req, res) => {
 exports.getProducts = async (req, res) => {
     try {
         const page = Math.max(Number(req.query.page || 1), 1)
-        const limit = Math.min(Math.max(Number(req.query.limit || 8), 1), 24)
+        const limit = Math.min(Math.max(Number(req.query.limit || 8), 1), 60)
         const skip = (page - 1) * limit
         const search = String(req.query.search || "").trim()
         const category = String(req.query.category || "").trim()
